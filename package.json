@@ -1,0 +1,52 @@
+{
+  "name": "bazar-e-pak-server",
+  "version": "1.0.0",
+  "description": "Production-ready REST API server for Bazar-e-Pak",
+  "private": true,
+  "type": "module",
+
+  "author": {
+    "name": "Bazar-e-Pak Development Team"
+  },
+
+  "license": "MIT",
+
+  "keywords": [
+    "bazar-e-pak",
+    "ecommerce",
+    "rest-api",
+    "express",
+    "bun",
+    "mongodb",
+    "mongoose",
+    "authentication",
+    "authorization",
+    "jwt"
+  ],
+
+  "scripts": {
+    "dev": "bun --watch src/server.js",
+    "start": "bun src/server.js",
+    "check": "bun --check src/server.js",
+    "test": "bun test"
+  },
+
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+
+  "dependencies": {
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "jose": "latest",
+    "mongoose": "latest",
+    "zod": "latest"
+  },
+
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
