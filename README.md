@@ -1,6 +1,6 @@
 # Bazar-e-Pak Server
 
-Backend API for the Bazar-e-Pak e-commerce platform.
+Backend API for the Bazar-e-Pak e-commerce platformmmm.
 
 ## Tech Stack
 
