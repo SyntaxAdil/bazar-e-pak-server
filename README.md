@@ -51,3 +51,14 @@ Source code is not publicly available.
 ## Note
 
 This project is developed as part of a team-based production project. Please do not redistribute or publish the source code without authorization.
+
+## ENV
+
+NODE_ENV=development
+
+PORT=5000
+
+CLIENT_URL=http://localhost:3000
+
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net
+
