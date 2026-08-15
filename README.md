@@ -62,3 +62,4 @@ CLIENT_URL=http://localhost:3000
 
 MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net
 
+TRUSTED_ORIGINS=http://localhost:3000
