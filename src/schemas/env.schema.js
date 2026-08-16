@@ -14,6 +14,9 @@ export const envSchema = z.object({
     DATABASE_URL: z
         .string()
         .min(1, "DATABASE_URL is required"),
+    SERVER_URL: z
+        .string()
+        .min(1, "SERVER_URL is required"),
 
     CLIENT_URL: z
         .url("CLIENT_URL must be a valid URL"),
