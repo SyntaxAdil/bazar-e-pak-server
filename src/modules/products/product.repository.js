@@ -46,7 +46,9 @@ export const updateProductById = async (
   ).lean();
 };
 
-export const softDeleteProductById = async (productId) => {
+export const softDeleteProductById = async (
+  productId,
+) => {
   return Product.findOneAndUpdate(
     {
       _id: productId,
@@ -55,6 +57,31 @@ export const softDeleteProductById = async (productId) => {
     {
       $set: {
         isDeleted: true,
+      },
+    },
+    {
+      new: true,
+    },
+  ).lean();
+};
+
+// Review-related product update
+export const updateProductReviewStats = async (
+  productId,
+  {
+    averageRating,
+    reviewCount,
+  },
+) => {
+  return Product.findOneAndUpdate(
+    {
+      _id: productId,
+      isDeleted: false,
+    },
+    {
+      $set: {
+        averageRating,
+        reviewCount,
       },
     },
     {

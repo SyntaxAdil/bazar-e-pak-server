@@ -13,15 +13,20 @@ import {
   deleteProduct as deleteProductService,
 } from "./product.service.js";
 
-export const createProduct = async (req, res, next) => {
+export const createProduct = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const validatedData =
       createProductSchema.parse(req.body);
 
-    const product = await createProductService(
-      validatedData,
-      req.user,
-    );
+    const product =
+      await createProductService(
+        validatedData,
+        req.user,
+      );
 
     return res.status(201).json({
       success: true,
@@ -33,11 +38,17 @@ export const createProduct = async (req, res, next) => {
   }
 };
 
-export const getProduct = async (req, res, next) => {
+export const getProduct = async (
+  req,
+  res,
+  next,
+) => {
   try {
-    const { id } = productIdSchema.parse(req.params);
+    const { id } =
+      productIdSchema.parse(req.params);
 
-    const product = await getProductById(id);
+    const product =
+      await getProductById(id);
 
     return res.status(200).json({
       success: true,
@@ -49,12 +60,17 @@ export const getProduct = async (req, res, next) => {
   }
 };
 
-export const getProducts = async (req, res, next) => {
+export const getProducts = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const query =
       productQuerySchema.parse(req.query);
 
-    const result = await listProducts(query);
+    const result =
+      await listProducts(query);
 
     return res.status(200).json({
       success: true,
@@ -73,16 +89,18 @@ export const updateProduct = async (
   next,
 ) => {
   try {
-    const { id } = productIdSchema.parse(req.params);
+    const { id } =
+      productIdSchema.parse(req.params);
 
     const validatedData =
       updateProductSchema.parse(req.body);
 
-    const product = await updateProductService(
-      id,
-      validatedData,
-      req.user,
-    );
+    const product =
+      await updateProductService(
+        id,
+        validatedData,
+        req.user,
+      );
 
     return res.status(200).json({
       success: true,
@@ -100,7 +118,8 @@ export const deleteProduct = async (
   next,
 ) => {
   try {
-    const { id } = productIdSchema.parse(req.params);
+    const { id } =
+      productIdSchema.parse(req.params);
 
     await deleteProductService(
       id,

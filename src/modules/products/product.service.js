@@ -5,6 +5,7 @@ import {
   countProducts,
   updateProductById,
   softDeleteProductById,
+  updateProductReviewStats,
 } from "./product.repository.js";
 
 import {
@@ -24,7 +25,7 @@ const createError = (
   return error;
 };
 
-// Check category
+// Validate category
 const validateCategory = async (
   categoryId,
 ) => {
@@ -48,7 +49,7 @@ const validateCategory = async (
   return category;
 };
 
-// Check shop
+// Validate shop
 const validateShop = async (
   shopId,
 ) => {
@@ -72,7 +73,7 @@ const validateShop = async (
   return shop;
 };
 
-// Check seller owns the shop
+// Validate seller owns shop
 const validateSellerShopOwnership = (
   shop,
   sellerId,
@@ -90,6 +91,7 @@ const validateSellerShopOwnership = (
   return shop;
 };
 
+// Create product
 export const createProduct = async (
   productData,
   user,
@@ -101,17 +103,14 @@ export const createProduct = async (
     );
   }
 
-  // Validate category
   await validateCategory(
     productData.categoryId,
   );
 
-  // Validate shop
   const shop = await validateShop(
     productData.shopId,
   );
 
-  // Seller can only use own shop
   if (user.role === "seller") {
     validateSellerShopOwnership(
       shop,
@@ -119,20 +118,19 @@ export const createProduct = async (
     );
   }
 
-  // Product owner comes from the shop owner
   const sellerId = String(
     shop.sellerId,
   );
 
-  const product =
-    await createProductRepository({
-      ...productData,
-      sellerId,
-    });
-
-  return product;
+  return createProductRepository({
+    ...productData,
+    sellerId,
+    averageRating: 0,
+    reviewCount: 0,
+  });
 };
 
+// Get product
 export const getProductById = async (
   productId,
 ) => {
@@ -149,6 +147,7 @@ export const getProductById = async (
   return product;
 };
 
+// Get products
 export const listProducts = async (
   query,
 ) => {
@@ -211,6 +210,7 @@ export const listProducts = async (
   };
 };
 
+// Update product
 export const updateProduct = async (
   productId,
   updateData,
@@ -233,7 +233,6 @@ export const updateProduct = async (
     );
   }
 
-  // Seller can only update own product
   if (
     user.role === "seller" &&
     String(existingProduct.sellerId) !==
@@ -245,7 +244,6 @@ export const updateProduct = async (
     );
   }
 
-  // Validate new category
   if (updateData.categoryId) {
     await validateCategory(
       updateData.categoryId,
@@ -256,13 +254,11 @@ export const updateProduct = async (
     ...updateData,
   };
 
-  // Validate new shop
   if (updateData.shopId) {
     const shop = await validateShop(
       updateData.shopId,
     );
 
-    // Seller can only use own shop
     if (user.role === "seller") {
       validateSellerShopOwnership(
         shop,
@@ -270,10 +266,8 @@ export const updateProduct = async (
       );
     }
 
-    // Keep sellerId synced with shop owner
-    updatePayload.sellerId = String(
-      shop.sellerId,
-    );
+    updatePayload.sellerId =
+      String(shop.sellerId);
   }
 
   const product =
@@ -292,6 +286,7 @@ export const updateProduct = async (
   return product;
 };
 
+// Delete product
 export const deleteProduct = async (
   productId,
   user,
@@ -313,7 +308,6 @@ export const deleteProduct = async (
     );
   }
 
-  // Seller can only delete own product
   if (
     user.role === "seller" &&
     String(existingProduct.sellerId) !==
@@ -339,3 +333,19 @@ export const deleteProduct = async (
 
   return product;
 };
+
+// Update review statistics
+export const updateProductReviewStatistics =
+  async (
+    productId,
+    averageRating,
+    reviewCount,
+  ) => {
+    return updateProductReviewStats(
+      productId,
+      {
+        averageRating,
+        reviewCount,
+      },
+    );
+  };

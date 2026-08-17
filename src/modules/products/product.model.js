@@ -67,29 +67,53 @@ const productSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+
+    // Review summary
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+
+    reviewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
   },
 );
 
+// Search
 productSchema.index({
   name: "text",
 });
 
+// Category filtering
 productSchema.index({
   categoryId: 1,
   status: 1,
   isDeleted: 1,
 });
 
+// Shop filtering
 productSchema.index({
   shopId: 1,
   status: 1,
   isDeleted: 1,
 });
 
+// Review sorting/filtering
+productSchema.index({
+  averageRating: -1,
+  reviewCount: -1,
+});
+
 const Product =
-  mongoose.models.Product || mongoose.model("Product", productSchema);
+  mongoose.models.Product ||
+  mongoose.model("Product", productSchema);
 
 export default Product;
