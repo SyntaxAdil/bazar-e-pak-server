@@ -4,7 +4,8 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
-// import productRoutes from "./modules/products/product.route.js";
+import apiRoutes from "./routes/index.js";
+
 import errorMiddleware from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -41,13 +42,16 @@ app.get("/health", (req, res) => {
 });
 
 // API routes
-// for example eta -> app.use("/api/products", productRoutes);
-
+app.use("/api", apiRoutes);
 
 // Handle unknown routes
 app.use((req, res, next) => {
-    const error = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
+    const error = new Error(
+        `Route not found: ${req.method} ${req.originalUrl}`
+    );
+
     error.statusCode = 404;
+
     next(error);
 });
 
