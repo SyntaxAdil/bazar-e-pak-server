@@ -1,4 +1,4 @@
-import validateToken from "../lib/valid-token";
+import validateToken from "../lib/valid-token.js";
 
 
 const authMiddleware = async (req, res, next) => {
