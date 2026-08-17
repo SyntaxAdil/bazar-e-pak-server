@@ -39,7 +39,7 @@ export const deleteCart = async (userId) => {
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     }
   );
 };

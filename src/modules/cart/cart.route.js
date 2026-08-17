@@ -8,7 +8,7 @@ import {
   clearCartController,
 } from "./cart.controller.js";
 
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import authMiddleware from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
