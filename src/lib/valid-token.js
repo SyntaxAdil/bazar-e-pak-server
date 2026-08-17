@@ -2,7 +2,7 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 import { env } from "../config/env.js";
 
 const JWKS = createRemoteJWKSet(
-    new URL(`${env.SERVER_URL}/api/auth/jwks`)
+    new URL(`${env.CLIENT_URL}/api/auth/jwks`)
 );
 
 const validateToken = async (token) => {

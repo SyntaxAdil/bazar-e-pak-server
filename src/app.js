@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
+import { connectDB } from "./config/database.js";
 import apiRoutes from "./routes/index.js";
 
 import errorMiddleware from "./middlewares/error.middleware.js";
@@ -34,11 +35,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health check
-app.get("/health", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Bazar-e-Pak server is running",
-    });
+app.get("/health", async (req, res, next) => {
+    try {
+        await connectDB();
+
+        res.status(200).json({
+            success: true,
+            message: "Bazar-e-Pak server is running",
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Connect database before API requests
+app.use("/api", async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
 // API routes
