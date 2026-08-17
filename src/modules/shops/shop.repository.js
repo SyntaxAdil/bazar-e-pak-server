@@ -40,7 +40,7 @@ export const updateShopById = (
       $set: updateData,
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   ).lean();
@@ -66,4 +66,26 @@ export const findShops = ({
 
 export const countShops = (query) => {
   return Shop.countDocuments(query);
+};
+
+
+export const updateShopReviewStats = (
+  shopId,
+  {
+    rating,
+    totalReviews,
+  },
+) => {
+  return Shop.findByIdAndUpdate(
+    shopId,
+    {
+      $set: {
+        rating,
+        totalReviews,
+      },
+    },
+    {
+      returnDocument: "after",
+    },
+  ).lean();
 };

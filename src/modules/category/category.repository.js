@@ -78,7 +78,7 @@ export const updateCategoryById = async (
       $set: updateData,
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   ).lean();
@@ -97,7 +97,7 @@ export const softDeleteCategoryById =
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       },
     ).lean();
   };

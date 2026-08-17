@@ -40,7 +40,7 @@ export const updateProductById = async (
       $set: updateData,
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   ).lean();
@@ -60,7 +60,7 @@ export const softDeleteProductById = async (
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     },
   ).lean();
 };
@@ -85,7 +85,7 @@ export const updateProductReviewStats = async (
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     },
   ).lean();
 };
