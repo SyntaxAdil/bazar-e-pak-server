@@ -68,7 +68,7 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Review summary
+    // Cached product rating
     averageRating: {
       type: Number,
       default: 0,
@@ -76,6 +76,7 @@ const productSchema = new mongoose.Schema(
       max: 5,
     },
 
+    // Cached number of product reviews
     reviewCount: {
       type: Number,
       default: 0,
@@ -87,7 +88,7 @@ const productSchema = new mongoose.Schema(
   },
 );
 
-// Search
+// Product search
 productSchema.index({
   name: "text",
 });
@@ -106,7 +107,7 @@ productSchema.index({
   isDeleted: 1,
 });
 
-// Review sorting/filtering
+// Rating sorting
 productSchema.index({
   averageRating: -1,
   reviewCount: -1,

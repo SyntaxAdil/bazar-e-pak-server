@@ -2,111 +2,111 @@ import mongoose from "mongoose";
 import Review from "./review.model.js";
 
 export const createReview = (
-    reviewData,
+  reviewData,
 ) => {
-    return Review.create(reviewData);
+  return Review.create(reviewData);
 };
 
 export const findReviews = (
-    filter = {},
+  filter = {},
 ) => {
-    return Review.find(filter)
-        .sort({
-            createdAt: -1,
-        })
-        .lean();
+  return Review.find(filter)
+    .sort({
+      createdAt: -1,
+    })
+    .lean();
 };
 
 export const findReviewById = (
-    reviewId,
+  reviewId,
 ) => {
-    return Review.findById(
-        reviewId,
-    ).lean();
+  return Review.findById(
+    reviewId,
+  ).lean();
 };
 
 export const deleteReviewById = (
-    reviewId,
+  reviewId,
 ) => {
-    return Review.findByIdAndDelete(
-        reviewId,
-    ).lean();
+  return Review.findByIdAndDelete(
+    reviewId,
+  ).lean();
 };
 
+// Product review statistics
 export const getProductReviewStats =
-    async (productId) => {
-        const [stats] =
-            await Review.aggregate([
-                {
-                    $match: {
-                        reviewType:
-                            "product",
+  async (productId) => {
+    const [stats] =
+      await Review.aggregate([
+        {
+          $match: {
+            reviewType: "product",
+            productId:
+              new mongoose.Types.ObjectId(
+                productId,
+              ),
+          },
+        },
 
-                        productId:
-                            new mongoose.Types.ObjectId(
-                                productId,
-                            ),
-                    },
-                },
-                {
-                    $group: {
-                        _id: null,
+        {
+          $group: {
+            _id: null,
 
-                        averageRating: {
-                            $avg: "$rating",
-                        },
+            averageRating: {
+              $avg: "$rating",
+            },
 
-                        reviewCount: {
-                            $sum: 1,
-                        },
-                    },
-                },
-            ]);
+            reviewCount: {
+              $sum: 1,
+            },
+          },
+        },
+      ]);
 
-        return {
-            averageRating:
-                stats?.averageRating || 0,
+    return {
+      averageRating:
+        stats?.averageRating || 0,
 
-            reviewCount:
-                stats?.reviewCount || 0,
-        };
+      reviewCount:
+        stats?.reviewCount || 0,
     };
+  };
 
+// Shop review statistics
 export const getShopReviewStats =
-    async (shopId) => {
-        const [stats] =
-            await Review.aggregate([
-                {
-                    $match: {
-                        reviewType:
-                            "shop",
+  async (shopId) => {
+    const [stats] =
+      await Review.aggregate([
+        {
+          $match: {
+            reviewType: "shop",
+            shopId:
+              new mongoose.Types.ObjectId(
+                shopId,
+              ),
+          },
+        },
 
-                        shopId:
-                            new mongoose.Types.ObjectId(
-                                shopId,
-                            ),
-                    },
-                },
-                {
-                    $group: {
-                        _id: null,
+        {
+          $group: {
+            _id: null,
 
-                        rating: {
-                            $avg: "$rating",
-                        },
+            rating: {
+              $avg: "$rating",
+            },
 
-                        totalReviews: {
-                            $sum: 1,
-                        },
-                    },
-                },
-            ]);
+            totalReviews: {
+              $sum: 1,
+            },
+          },
+        },
+      ]);
 
-        return {
-            rating:
-                stats?.rating || 0,
+    return {
+      rating:
+        stats?.rating || 0,
 
-            totalReviews:
-                stats?.totalReviews || 0,
-        };
+      totalReviews:
+        stats?.totalReviews || 0,
     };
+  };

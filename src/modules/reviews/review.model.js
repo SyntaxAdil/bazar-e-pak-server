@@ -51,7 +51,7 @@ const reviewSchema = new mongoose.Schema(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 // Product review lookup
@@ -67,6 +67,42 @@ reviewSchema.index({
     shopId: 1,
     createdAt: -1,
 });
+
+// One user can review a product only once
+reviewSchema.index(
+    {
+        reviewType: 1,
+        productId: 1,
+        userId: 1,
+    },
+    {
+        unique: true,
+        partialFilterExpression: {
+            reviewType: "product",
+            productId: {
+                $type: "objectId",
+            },
+        },
+    },
+);
+
+// One user can review a shop only once
+reviewSchema.index(
+    {
+        reviewType: 1,
+        shopId: 1,
+        userId: 1,
+    },
+    {
+        unique: true,
+        partialFilterExpression: {
+            reviewType: "shop",
+            shopId: {
+                $type: "objectId",
+            },
+        },
+    },
+);
 
 const Review =
     mongoose.models.Review ||

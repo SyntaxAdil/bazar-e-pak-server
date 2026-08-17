@@ -1,10 +1,14 @@
 import Product from "./product.model.js";
 
-export const createProduct = async (productData) => {
+export const createProduct = async (
+  productData,
+) => {
   return Product.create(productData);
 };
 
-export const findProductById = async (productId) => {
+export const findProductById = async (
+  productId,
+) => {
   return Product.findOne({
     _id: productId,
     isDeleted: false,
@@ -17,13 +21,17 @@ export const findProducts = async ({
   limit,
 }) => {
   return Product.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({
+      createdAt: -1,
+    })
     .skip(skip)
     .limit(limit)
     .lean();
 };
 
-export const countProducts = async (filter) => {
+export const countProducts = async (
+  filter,
+) => {
   return Product.countDocuments(filter);
 };
 
@@ -46,46 +54,46 @@ export const updateProductById = async (
   ).lean();
 };
 
-export const softDeleteProductById = async (
-  productId,
-) => {
-  return Product.findOneAndUpdate(
-    {
-      _id: productId,
-      isDeleted: false,
-    },
-    {
-      $set: {
-        isDeleted: true,
+export const softDeleteProductById =
+  async (productId) => {
+    return Product.findOneAndUpdate(
+      {
+        _id: productId,
+        isDeleted: false,
       },
-    },
-    {
-      returnDocument: "after",
-    },
-  ).lean();
-};
+      {
+        $set: {
+          isDeleted: true,
+        },
+      },
+      {
+        returnDocument: "after",
+      },
+    ).lean();
+  };
 
-// Review-related product update
-export const updateProductReviewStats = async (
-  productId,
-  {
-    averageRating,
-    reviewCount,
-  },
-) => {
-  return Product.findOneAndUpdate(
+// Update cached product review statistics
+export const updateProductReviewStats =
+  async (
+    productId,
     {
-      _id: productId,
-      isDeleted: false,
+      averageRating,
+      reviewCount,
     },
-    {
-      $set: {
-        averageRating,
-        reviewCount,
+  ) => {
+    return Product.findOneAndUpdate(
+      {
+        _id: productId,
+        isDeleted: false,
       },
-    },
-    {
-      returnDocument: "after",
-    },
-  ).lean();
-};
+      {
+        $set: {
+          averageRating,
+          reviewCount,
+        },
+      },
+      {
+        returnDocument: "after",
+      },
+    ).lean();
+  };

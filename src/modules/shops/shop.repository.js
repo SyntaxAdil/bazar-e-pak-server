@@ -1,22 +1,34 @@
 import Shop from "./shop.model.js";
 
-export const createShop = (shopData) => {
+export const createShop = (
+  shopData,
+) => {
   return Shop.create(shopData);
 };
 
-export const findShopById = (shopId) => {
+export const findShopById = (
+  shopId,
+) => {
   return Shop.findById(shopId).lean();
 };
 
-export const findShopDocumentById = (shopId) => {
+export const findShopDocumentById = (
+  shopId,
+) => {
   return Shop.findById(shopId);
 };
 
-export const findShopBySlug = (slug) => {
-  return Shop.findOne({ slug }).lean();
+export const findShopBySlug = (
+  slug,
+) => {
+  return Shop.findOne({
+    slug,
+  }).lean();
 };
 
-export const findShopBySellerId = (sellerId) => {
+export const findShopBySellerId = (
+  sellerId,
+) => {
   return Shop.findOne({
     sellerId,
   }).lean();
@@ -46,7 +58,9 @@ export const updateShopById = (
   ).lean();
 };
 
-export const deleteShopById = (shopId) => {
+export const deleteShopById = (
+  shopId,
+) => {
   return Shop.findByIdAndDelete(shopId);
 };
 
@@ -64,11 +78,13 @@ export const findShops = ({
     .lean();
 };
 
-export const countShops = (query) => {
+export const countShops = (
+  query,
+) => {
   return Shop.countDocuments(query);
 };
 
-
+// Update cached shop review statistics
 export const updateShopReviewStats = (
   shopId,
   {
@@ -86,6 +102,7 @@ export const updateShopReviewStats = (
     },
     {
       returnDocument: "after",
+      runValidators: true,
     },
   ).lean();
 };
