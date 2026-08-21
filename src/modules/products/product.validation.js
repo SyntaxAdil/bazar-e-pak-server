@@ -13,6 +13,18 @@ const imageUrlSchema = z
     "Each image must be a valid URL",
   );
 
+const discountSchema = z
+  .number()
+  .finite()
+  .min(
+    0,
+    "Discount cannot be negative",
+  )
+  .max(
+    100,
+    "Discount cannot exceed 100%",
+  );
+
 export const createProductSchema =
   z
     .object({
@@ -47,6 +59,9 @@ export const createProductSchema =
           0,
           "Price cannot be negative",
         ),
+
+      discount:
+        discountSchema.default(0),
 
       stock: z
         .number()
@@ -114,6 +129,9 @@ export const updateProductSchema =
           "Price cannot be negative",
         )
         .optional(),
+
+      discount:
+        discountSchema.optional(),
 
       stock: z
         .number()
@@ -186,5 +204,36 @@ export const productQuerySchema =
         .min(1)
         .max(100)
         .default(20),
+    })
+    .strict();
+
+export const productFeatureSchema =
+  z.object({
+    isFeatured: z.boolean(),
+  });
+
+export const productTrackingSchema =
+  z.object({
+    type: z.enum([
+      "whatsapp",
+      "call",
+    ]),
+  });
+
+export const bestSellingQuerySchema =
+  z
+    .object({
+      shopId:
+        objectIdSchema.optional(),
+
+      categoryId:
+        objectIdSchema.optional(),
+
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(10),
     })
     .strict();

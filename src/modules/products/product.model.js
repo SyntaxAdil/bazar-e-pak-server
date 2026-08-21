@@ -23,6 +23,13 @@ const productSchema = new mongoose.Schema(
       min: 0,
     },
 
+    discount: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+
     stock: {
       type: Number,
       required: true,
@@ -62,13 +69,37 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
+    isFeatured: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
     isDeleted: {
       type: Boolean,
       default: false,
       index: true,
     },
 
-    // Cached product rating
+    purchaseCount: {
+      type: Number,
+      min: 0,
+      default: 0,
+      index: true,
+    },
+
+    whatsappClicks: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    callClicks: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
     averageRating: {
       type: Number,
       default: 0,
@@ -76,7 +107,6 @@ const productSchema = new mongoose.Schema(
       max: 5,
     },
 
-    // Cached number of product reviews
     reviewCount: {
       type: Number,
       default: 0,
@@ -88,26 +118,33 @@ const productSchema = new mongoose.Schema(
   },
 );
 
-// Product search
 productSchema.index({
   name: "text",
 });
 
-// Category filtering
 productSchema.index({
   categoryId: 1,
   status: 1,
   isDeleted: 1,
 });
 
-// Shop filtering
 productSchema.index({
   shopId: 1,
   status: 1,
   isDeleted: 1,
 });
 
-// Rating sorting
+productSchema.index({
+  isFeatured: 1,
+  status: 1,
+  isDeleted: 1,
+});
+
+productSchema.index({
+  purchaseCount: -1,
+  averageRating: -1,
+});
+
 productSchema.index({
   averageRating: -1,
   reviewCount: -1,

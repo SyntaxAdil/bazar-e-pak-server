@@ -28,55 +28,21 @@ Public
 
 ### Query Parameters
 
-| Parameter  | Type   | Required | Description                                  |
-| ---------- | ------ | -------- | -------------------------------------------- |
-| `page`     | number | No       | Page number. Default: `1`                    |
-| `limit`    | number | No       | Items per page. Default: `20`, maximum: `50` |
-| `search`   | string | No       | Search shops by name or description          |
-| `status`   | string | No       | `active`, `inactive`, `suspended`            |
-| `sellerId` | string | No       | Filter shops by seller ID                    |
+| Parameter  | Type   | Required | Description                                              |
+| ---------- | ------ | -------- | -------------------------------------------------------- |
+| `page`     | number | No       | Page number. Default: `1`                                |
+| `limit`    | number | No       | Items per page. Default: `20`, maximum: `50`             |
+| `search`   | string | No       | Search shops by name or description                      |
+| `status`   | string | No       | `pending`, `active`, `inactive`, `suspended`, `rejected` |
+| `sellerId` | string | No       | Filter shops by seller ID                                |
 
 ### Example
 
 `GET /api/shops?page=1&limit=20&search=mobile&status=active`
 
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Shops fetched successfully",
-  "data": [
-    {
-      "_id": "66b123456789abcdef123456",
-      "sellerId": "66b123456789abcdef654321",
-      "name": "Mobile Accessories BD",
-      "slug": "mobile-accessories-bd",
-      "description": "All kinds of mobile accessories.",
-      "logo": "https://example.com/logo.png",
-      "banner": "https://example.com/banner.png",
-      "phone": "01700000000",
-      "email": "shop@example.com",
-      "address": "Dhaka, Bangladesh",
-      "status": "active",
-      "rating": 4.7,
-      "totalReviews": 128,
-      "createdAt": "2026-08-16T10:00:00.000Z",
-      "updatedAt": "2026-08-16T10:00:00.000Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 1,
-    "totalPages": 1
-  }
-}
-```
-
 ---
 
-# 2. Get Shop by ID
+## 2. Get Shop by ID
 
 **GET** `/api/shops/:shopId`
 
@@ -94,35 +60,9 @@ Public
 
 `GET /api/shops/66b123456789abcdef123456`
 
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Shop fetched successfully",
-  "data": {
-    "_id": "66b123456789abcdef123456",
-    "sellerId": "66b123456789abcdef654321",
-    "name": "Mobile Accessories BD",
-    "slug": "mobile-accessories-bd",
-    "description": "All kinds of mobile accessories.",
-    "logo": "https://example.com/logo.png",
-    "banner": "https://example.com/banner.png",
-    "phone": "01700000000",
-    "email": "shop@example.com",
-    "address": "Dhaka, Bangladesh",
-    "status": "active",
-    "rating": 4.7,
-    "totalReviews": 128,
-    "createdAt": "2026-08-16T10:00:00.000Z",
-    "updatedAt": "2026-08-16T10:00:00.000Z"
-  }
-}
-```
-
 ---
 
-# 3. Get Shop by Slug
+## 3. Get Shop by Slug
 
 **GET** `/api/shops/slug/:slug`
 
@@ -140,35 +80,9 @@ Public
 
 `GET /api/shops/slug/mobile-accessories-bd`
 
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Shop fetched successfully",
-  "data": {
-    "_id": "66b123456789abcdef123456",
-    "sellerId": "66b123456789abcdef654321",
-    "name": "Mobile Accessories BD",
-    "slug": "mobile-accessories-bd",
-    "description": "All kinds of mobile accessories.",
-    "logo": "https://example.com/logo.png",
-    "banner": "https://example.com/banner.png",
-    "phone": "01700000000",
-    "email": "shop@example.com",
-    "address": "Dhaka, Bangladesh",
-    "status": "active",
-    "rating": 4.7,
-    "totalReviews": 128,
-    "createdAt": "2026-08-16T10:00:00.000Z",
-    "updatedAt": "2026-08-16T10:00:00.000Z"
-  }
-}
-```
-
 ---
 
-# 4. Create Shop
+## 4. Create Shop
 
 **POST** `/api/shops`
 
@@ -208,11 +122,14 @@ Required
 
 ### Notes
 
-* `sellerId` is taken from the authenticated user.
+* `sellerId` is taken from authenticated user.
 * `slug` is generated automatically.
+* `status` is automatically set to `pending`.
+* Seller cannot set shop status.
 * `rating` starts at `0`.
 * `totalReviews` starts at `0`.
 * A seller can create only one shop.
+* Admin approval is required before the shop becomes active.
 
 ### Response
 
@@ -231,18 +148,18 @@ Required
     "phone": "01700000000",
     "email": "shop@example.com",
     "address": "Dhaka, Bangladesh",
-    "status": "active",
+    "status": "pending",
     "rating": 0,
     "totalReviews": 0,
-    "createdAt": "2026-08-16T10:00:00.000Z",
-    "updatedAt": "2026-08-16T10:00:00.000Z"
+    "createdAt": "2026-08-22T10:00:00.000Z",
+    "updatedAt": "2026-08-22T10:00:00.000Z"
   }
 }
 ```
 
 ---
 
-# 5. Update Shop
+## 5. Update Shop
 
 **PATCH** `/api/shops/:shopId`
 
@@ -258,10 +175,9 @@ Required
 
 * Seller can update only their own shop.
 * Admin can update any shop.
+* Status cannot be changed through this endpoint.
 
 ### Request Body
-
-All fields are optional.
 
 ```json
 {
@@ -275,35 +191,9 @@ All fields are optional.
 }
 ```
 
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Shop updated successfully",
-  "data": {
-    "_id": "66b123456789abcdef123456",
-    "sellerId": "66b123456789abcdef654321",
-    "name": "Mobile Accessories Bangladesh",
-    "slug": "mobile-accessories-bangladesh",
-    "description": "Premium mobile accessories shop.",
-    "logo": "https://example.com/new-logo.png",
-    "banner": "https://example.com/new-banner.png",
-    "phone": "01800000000",
-    "email": "contact@example.com",
-    "address": "Mirpur, Dhaka",
-    "status": "active",
-    "rating": 4.7,
-    "totalReviews": 128,
-    "createdAt": "2026-08-16T10:00:00.000Z",
-    "updatedAt": "2026-08-16T11:00:00.000Z"
-  }
-}
-```
-
 ---
 
-# 6. Delete Shop
+## 6. Delete Shop
 
 **DELETE** `/api/shops/:shopId`
 
@@ -332,7 +222,7 @@ Required
 
 ---
 
-# 7. Update Shop Status
+## 7. Update Shop Status
 
 **PATCH** `/api/shops/:shopId/status`
 
@@ -348,34 +238,49 @@ Required
 
 ```json
 {
-  "status": "inactive"
+  "status": "active"
 }
 ```
 
 ### Allowed Values
 
-| Value       | Description                           |
-| ----------- | ------------------------------------- |
-| `active`    | Shop is active and publicly available |
-| `inactive`  | Shop is temporarily inactive          |
-| `suspended` | Shop is suspended by admin            |
+| Value       | Description                     |
+| ----------- | ------------------------------- |
+| `pending`   | Waiting for admin approval      |
+| `active`    | Approved and publicly available |
+| `inactive`  | Temporarily inactive            |
+| `suspended` | Suspended by admin              |
+| `rejected`  | Rejected by admin               |
 
-### Response
+### Approve
 
 ```json
 {
-  "success": true,
-  "message": "Shop status updated successfully",
-  "data": {
-    "_id": "66b123456789abcdef123456",
-    "sellerId": "66b123456789abcdef654321",
-    "name": "Mobile Accessories BD",
-    "slug": "mobile-accessories-bd",
-    "status": "inactive",
-    "rating": 4.7,
-    "totalReviews": 128,
-    "updatedAt": "2026-08-16T11:30:00.000Z"
-  }
+  "status": "active"
+}
+```
+
+### Reject
+
+```json
+{
+  "status": "rejected"
+}
+```
+
+### Suspend
+
+```json
+{
+  "status": "suspended"
+}
+```
+
+### Deactivate
+
+```json
+{
+  "status": "inactive"
 }
 ```
 
@@ -395,7 +300,7 @@ Required
   "phone": "string",
   "email": "string",
   "address": "string",
-  "status": "active | inactive | suspended",
+  "status": "pending | active | inactive | suspended | rejected",
   "rating": "number",
   "totalReviews": "number",
   "createdAt": "Date",
@@ -409,13 +314,9 @@ Required
 
 ## Shop → Product
 
-A shop can have multiple products.
-
 ```text
 Shop 1 ───────── N Product
 ```
-
-Product stores the relationship:
 
 ```json
 {
@@ -425,13 +326,9 @@ Product stores the relationship:
 
 ## Shop → Review
 
-Reviews are handled by the separate Review module.
-
 ```text
 Shop 1 ───────── N Review
 ```
-
-Review stores the relationship:
 
 ```json
 {
@@ -439,9 +336,7 @@ Review stores the relationship:
 }
 ```
 
-Shop does not contain a `reviews[]` array.
-
-`rating` and `totalReviews` are cached summary fields and should be updated by the Review module whenever reviews are created, updated, or deleted.
+`rating` and `totalReviews` are cached fields updated by the Review module.
 
 ---
 
@@ -496,12 +391,12 @@ Shop does not contain a `reviews[]` array.
 
 # Endpoint Summary
 
-| Method | Endpoint                    | Access       | Description        |
-| ------ | --------------------------- | ------------ | ------------------ |
-| GET    | `/api/shops`                | Public       | Get all shops      |
-| GET    | `/api/shops/:shopId`        | Public       | Get shop by ID     |
-| GET    | `/api/shops/slug/:slug`     | Public       | Get shop by slug   |
-| POST   | `/api/shops`                | Seller       | Create shop        |
-| PATCH  | `/api/shops/:shopId`        | Seller/Admin | Update shop        |
-| DELETE | `/api/shops/:shopId`        | Seller/Admin | Delete shop        |
-| PATCH  | `/api/shops/:shopId/status` | Admin        | Update shop status |
+| Method | Endpoint                    | Access       | Description                  |
+| ------ | --------------------------- | ------------ | ---------------------------- |
+| GET    | `/api/shops`                | Public       | Get all shops                |
+| GET    | `/api/shops/:shopId`        | Public       | Get shop by ID               |
+| GET    | `/api/shops/slug/:slug`     | Public       | Get shop by slug             |
+| POST   | `/api/shops`                | Seller       | Create shop                  |
+| PATCH  | `/api/shops/:shopId`        | Seller/Admin | Update shop                  |
+| DELETE | `/api/shops/:shopId`        | Seller/Admin | Delete shop                  |
+| PATCH  | `/api/shops/:shopId/status` | Admin        | Approve/reject/manage status |

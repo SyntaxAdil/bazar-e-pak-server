@@ -6,6 +6,9 @@ import {
   getProducts,
   updateProduct,
   deleteProduct,
+  setProductFeatured,
+  trackProduct,
+  getBestSelling,
 } from "./product.controller.js";
 
 import authMiddleware from "../../middlewares/auth.middleware.js";
@@ -13,12 +16,21 @@ import checkRoleMiddleware from "../../middlewares/role-middleware.js";
 
 const router = Router();
 
-// Public product browsing
-router.get("/", getProducts);
+router.get(
+  "/best-selling",
+  getBestSelling,
+);
 
-router.get("/:id", getProduct);
+router.get(
+  "/",
+  getProducts,
+);
 
-// Seller + Admin product management
+router.get(
+  "/:id",
+  getProduct,
+);
+
 router.post(
   "/",
   authMiddleware,
@@ -47,6 +59,21 @@ router.delete(
     "admin",
   ]),
   deleteProduct,
+);
+
+router.patch(
+  "/:id/featured",
+  authMiddleware,
+  checkRoleMiddleware([
+    "seller",
+    "admin",
+  ]),
+  setProductFeatured,
+);
+
+router.post(
+  "/:id/track",
+  trackProduct,
 );
 
 export default router;

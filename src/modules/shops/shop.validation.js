@@ -104,9 +104,11 @@ export const shopListQuerySchema = z.object({
 
   status: z
     .enum([
+      "pending",
       "active",
       "inactive",
       "suspended",
+      "rejected",
     ])
     .optional(),
 
@@ -115,8 +117,10 @@ export const shopListQuerySchema = z.object({
 
 export const updateShopStatusSchema = z.object({
   status: z.enum([
+    "pending",
     "active",
     "inactive",
     "suspended",
+    "rejected",
   ]),
 });

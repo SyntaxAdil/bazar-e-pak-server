@@ -6,6 +6,12 @@ import {
   updateProductById,
   softDeleteProductById,
   updateProductReviewStats,
+  updateProductFeaturedById,
+  incrementProductTracking,
+  incrementProductPurchaseCount,
+  findBestSellingProducts,
+  findTopRatedProducts,
+  getTotalPurchaseCount,
 } from "./product.repository.js";
 
 import {
@@ -25,7 +31,6 @@ const createError = (
   return error;
 };
 
-// Validate category
 const validateCategory = async (
   categoryId,
 ) => {
@@ -49,7 +54,6 @@ const validateCategory = async (
   return category;
 };
 
-// Validate shop
 const validateShop = async (
   shopId,
 ) => {
@@ -73,7 +77,6 @@ const validateShop = async (
   return shop;
 };
 
-// Validate seller owns shop
 const validateSellerShopOwnership = (
   shop,
   sellerId,
@@ -91,7 +94,6 @@ const validateSellerShopOwnership = (
   return shop;
 };
 
-// Create product
 export const createProduct = async (
   productData,
   user,
@@ -107,9 +109,10 @@ export const createProduct = async (
     productData.categoryId,
   );
 
-  const shop = await validateShop(
-    productData.shopId,
-  );
+  const shop =
+    await validateShop(
+      productData.shopId,
+    );
 
   if (user.role === "seller") {
     validateSellerShopOwnership(
@@ -125,12 +128,17 @@ export const createProduct = async (
   return createProductRepository({
     ...productData,
     sellerId,
+    discount:
+      productData.discount ?? 0,
+    isFeatured: false,
+    purchaseCount: 0,
+    whatsappClicks: 0,
+    callClicks: 0,
     averageRating: 0,
     reviewCount: 0,
   });
 };
 
-// Get product
 export const getProductById = async (
   productId,
 ) => {
@@ -147,7 +155,6 @@ export const getProductById = async (
   return product;
 };
 
-// Get products
 export const listProducts = async (
   query,
 ) => {
@@ -198,7 +205,6 @@ export const listProducts = async (
 
   return {
     products,
-
     pagination: {
       page,
       limit,
@@ -210,7 +216,6 @@ export const listProducts = async (
   };
 };
 
-// Update product
 export const updateProduct = async (
   productId,
   updateData,
@@ -255,9 +260,10 @@ export const updateProduct = async (
   };
 
   if (updateData.shopId) {
-    const shop = await validateShop(
-      updateData.shopId,
-    );
+    const shop =
+      await validateShop(
+        updateData.shopId,
+      );
 
     if (user.role === "seller") {
       validateSellerShopOwnership(
@@ -269,6 +275,13 @@ export const updateProduct = async (
     updatePayload.sellerId =
       String(shop.sellerId);
   }
+
+  delete updatePayload.isFeatured;
+  delete updatePayload.purchaseCount;
+  delete updatePayload.whatsappClicks;
+  delete updatePayload.callClicks;
+  delete updatePayload.averageRating;
+  delete updatePayload.reviewCount;
 
   const product =
     await updateProductById(
@@ -286,7 +299,6 @@ export const updateProduct = async (
   return product;
 };
 
-// Delete product
 export const deleteProduct = async (
   productId,
   user,
@@ -334,7 +346,150 @@ export const deleteProduct = async (
   return product;
 };
 
-// Update review statistics
+export const updateProductFeatured =
+  async (
+    productId,
+    isFeatured,
+    user,
+  ) => {
+    if (!user?.id) {
+      throw createError(
+        "Authenticated user information is required",
+        401,
+      );
+    }
+
+    const product =
+      await findProductById(productId);
+
+    if (!product) {
+      throw createError(
+        "Product not found",
+        404,
+      );
+    }
+
+    if (
+      user.role === "seller" &&
+      String(product.sellerId) !==
+        String(user.id)
+    ) {
+      throw createError(
+        "You are not allowed to manage this product",
+        403,
+      );
+    }
+
+    if (
+      isFeatured &&
+      product.status !== "active"
+    ) {
+      throw createError(
+        "Only active products can be featured",
+        400,
+      );
+    }
+
+    return updateProductFeaturedById(
+      productId,
+      isFeatured,
+    );
+  };
+
+export const trackProductClick =
+  async (
+    productId,
+    type,
+  ) => {
+    const product =
+      await findProductById(productId);
+
+    if (!product) {
+      throw createError(
+        "Product not found",
+        404,
+      );
+    }
+
+    const field =
+      type === "whatsapp"
+        ? "whatsappClicks"
+        : "callClicks";
+
+    return incrementProductTracking(
+      productId,
+      field,
+    );
+  };
+
+export const incrementPurchaseCount =
+  async (
+    productId,
+    quantity = 1,
+  ) => {
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1
+    ) {
+      throw createError(
+        "Purchase quantity must be at least 1",
+        400,
+      );
+    }
+
+    const product =
+      await findProductById(productId);
+
+    if (!product) {
+      throw createError(
+        "Product not found",
+        404,
+      );
+    }
+
+    return incrementProductPurchaseCount(
+      productId,
+      quantity,
+    );
+  };
+
+export const getBestSellingProducts =
+  async ({
+    shopId,
+    categoryId,
+    limit = 10,
+  }) => {
+    const filter = {
+      isDeleted: false,
+      status: "active",
+    };
+
+    if (shopId) {
+      filter.shopId = shopId;
+    }
+
+    if (categoryId) {
+      filter.categoryId = categoryId;
+    }
+
+    const totalPurchases =
+      await getTotalPurchaseCount(
+        filter,
+      );
+
+    if (totalPurchases > 0) {
+      return findBestSellingProducts({
+        filter,
+        limit,
+      });
+    }
+
+    return findTopRatedProducts({
+      filter,
+      limit,
+    });
+  };
+
 export const updateProductReviewStatistics =
   async (
     productId,

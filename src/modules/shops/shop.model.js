@@ -68,13 +68,17 @@ const shopSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["active", "inactive", "suspended"],
-      default: "active",
+      enum: [
+        "pending",
+        "active",
+        "inactive",
+        "suspended",
+        "rejected",
+      ],
+      default: "pending",
       index: true,
     },
 
-    // Cached shop rating.
-    // Actual reviews will be stored in the separate Review module.
     rating: {
       type: Number,
       min: 0,
@@ -82,8 +86,6 @@ const shopSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // Cached number of reviews.
-    // Actual Review documents will reference this shop through shopId.
     totalReviews: {
       type: Number,
       min: 0,
@@ -95,19 +97,16 @@ const shopSchema = new mongoose.Schema(
   },
 );
 
-// Seller can quickly find their shop.
 shopSchema.index({
   sellerId: 1,
   status: 1,
 });
 
-// Useful for public shop listing.
 shopSchema.index({
   status: 1,
   createdAt: -1,
 });
 
-// Useful for shop search.
 shopSchema.index({
   name: "text",
   description: "text",

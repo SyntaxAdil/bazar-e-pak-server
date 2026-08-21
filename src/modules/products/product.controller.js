@@ -3,6 +3,9 @@ import {
   updateProductSchema,
   productIdSchema,
   productQuerySchema,
+  productFeatureSchema,
+  productTrackingSchema,
+  bestSellingQuerySchema,
 } from "./product.validation.js";
 
 import {
@@ -11,6 +14,9 @@ import {
   listProducts,
   updateProduct as updateProductService,
   deleteProduct as deleteProductService,
+  updateProductFeatured,
+  trackProductClick,
+  getBestSellingProducts,
 } from "./product.service.js";
 
 export const createProduct = async (
@@ -30,7 +36,8 @@ export const createProduct = async (
 
     return res.status(201).json({
       success: true,
-      message: "Product created successfully",
+      message:
+        "Product created successfully",
       data: product,
     });
   } catch (error) {
@@ -52,7 +59,8 @@ export const getProduct = async (
 
     return res.status(200).json({
       success: true,
-      message: "Product fetched successfully",
+      message:
+        "Product fetched successfully",
       data: product,
     });
   } catch (error) {
@@ -74,9 +82,11 @@ export const getProducts = async (
 
     return res.status(200).json({
       success: true,
-      message: "Products fetched successfully",
+      message:
+        "Products fetched successfully",
       data: result.products,
-      pagination: result.pagination,
+      pagination:
+        result.pagination,
     });
   } catch (error) {
     next(error);
@@ -104,7 +114,8 @@ export const updateProduct = async (
 
     return res.status(200).json({
       success: true,
-      message: "Product updated successfully",
+      message:
+        "Product updated successfully",
       data: product,
     });
   } catch (error) {
@@ -128,7 +139,99 @@ export const deleteProduct = async (
 
     return res.status(200).json({
       success: true,
-      message: "Product deleted successfully",
+      message:
+        "Product deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setProductFeatured = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } =
+      productIdSchema.parse(req.params);
+
+    const { isFeatured } =
+      productFeatureSchema.parse(
+        req.body,
+      );
+
+    const product =
+      await updateProductFeatured(
+        id,
+        isFeatured,
+        req.user,
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: isFeatured
+        ? "Product marked as featured"
+        : "Product removed from featured",
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const trackProduct = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } =
+      productIdSchema.parse(req.params);
+
+    const { type } =
+      productTrackingSchema.parse(
+        req.body,
+      );
+
+    const product =
+      await trackProductClick(
+        id,
+        type,
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Product interaction tracked successfully",
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getBestSelling = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const query =
+      bestSellingQuerySchema.parse(
+        req.query,
+      );
+
+    const products =
+      await getBestSellingProducts(
+        query,
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Best selling products fetched successfully",
+      data: products,
     });
   } catch (error) {
     next(error);
