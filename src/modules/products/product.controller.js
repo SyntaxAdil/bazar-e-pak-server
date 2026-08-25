@@ -12,6 +12,7 @@ import {
   createProduct as createProductService,
   getProductById,
   listProducts,
+  listSellerProducts,
   updateProduct as updateProductService,
   deleteProduct as deleteProductService,
   updateProductFeatured,
@@ -77,6 +78,10 @@ export const getProducts = async (
     const query =
       productQuerySchema.parse(req.query);
 
+    if (req.user?.role === "seller") {
+      query.sellerId = String(req.user.id);
+    }
+
     const result =
       await listProducts(query);
 
@@ -84,6 +89,37 @@ export const getProducts = async (
       success: true,
       message:
         "Products fetched successfully",
+      data: result.products,
+      pagination:
+        result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Seller-only product listing.
+ */
+export const getSellerProducts = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const query =
+      productQuerySchema.parse(req.query);
+
+    const result =
+      await listSellerProducts(
+        query,
+        req.user,
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Seller products fetched successfully",
       data: result.products,
       pagination:
         result.pagination,

@@ -4,6 +4,7 @@ import {
   createProduct,
   getProduct,
   getProducts,
+  getSellerProducts,
   updateProduct,
   deleteProduct,
   setProductFeatured,
@@ -15,6 +16,12 @@ import authMiddleware from "../../middlewares/auth.middleware.js";
 import checkRoleMiddleware from "../../middlewares/role-middleware.js";
 
 const router = Router();
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
 
 router.get(
   "/best-selling",
@@ -29,6 +36,22 @@ router.get(
 router.get(
   "/:id",
   getProduct,
+);
+
+/*
+|--------------------------------------------------------------------------
+| Seller Routes
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/seller",
+  authMiddleware,
+  checkRoleMiddleware([
+    "seller",
+    "admin",
+  ]),
+  getSellerProducts,
 );
 
 router.post(

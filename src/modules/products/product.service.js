@@ -155,9 +155,91 @@ export const getProductById = async (
   return product;
 };
 
-export const listProducts = async (
+/**
+ * Public product listing.
+ * Used by storefront / customer pages.
+ */
+export const listProducts = async (query) => {
+  const {
+    search,
+    categoryId,
+    shopId,
+    status,
+    isFeatured,
+    sellerId,
+    page,
+    limit,
+  } = query;
+
+  const filter = {
+    isDeleted: false,
+  };
+
+  if (search) {
+    filter.$text = {
+      $search: search,
+    };
+  }
+
+  if (categoryId) {
+    filter.categoryId = categoryId;
+  }
+
+  if (shopId) {
+    filter.shopId = shopId;
+  }
+
+  if (sellerId) {
+    filter.sellerId = String(sellerId);
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (isFeatured !== undefined) {
+    filter.isFeatured = isFeatured === "true";
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await Promise.all([
+    findProducts({
+      filter,
+      skip,
+      limit,
+    }),
+
+    countProducts(filter),
+  ]);
+
+  return {
+    products,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+/**
+ * Seller product listing.
+ * IMPORTANT:
+ * Seller can only see their own products.
+ */
+export const listSellerProducts = async (
   query,
+  user,
 ) => {
+  if (!user?.id) {
+    throw createError(
+      "Authenticated user information is required",
+      401,
+    );
+  }
+
   const {
     search,
     categoryId,
@@ -169,6 +251,7 @@ export const listProducts = async (
 
   const filter = {
     isDeleted: false,
+    sellerId: String(user.id),
   };
 
   if (search) {
