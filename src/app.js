@@ -11,30 +11,47 @@ import errorMiddleware from "./middlewares/error.middleware.js";
 
 const app = express();
 
-// Security middleware
+
 app.use(helmet());
 
 app.use(
     cors({
         origin: env.CLIENT_URL,
         credentials: true,
-    })
+    }),
 );
 
-app.use(
-    rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: env.NODE_ENV === "development" ? 1000 : 100,
-        standardHeaders: true,
-        legacyHeaders: false,
-    })
-);
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
 
-// Parse request body
+    max:
+        env.NODE_ENV === "development"
+            ? 5000
+            : 100,
+
+    standardHeaders: true,
+    legacyHeaders: false,
+
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message:
+                "Too many requests. Please try again later.",
+        });
+    },
+});
+
+app.use(globalLimiter);
+
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(
+    express.urlencoded({
+        extended: true,
+    }),
+);
 
-// Health check
+
 app.get("/health", async (req, res, next) => {
     try {
         await connectDB();
@@ -48,7 +65,8 @@ app.get("/health", async (req, res, next) => {
     }
 });
 
-// Connect database before API requests
+
+
 app.use("/api", async (req, res, next) => {
     try {
         await connectDB();
@@ -58,13 +76,14 @@ app.use("/api", async (req, res, next) => {
     }
 });
 
-// API routes
+
 app.use("/api", apiRoutes);
 
-// Handle unknown routes
+
+
 app.use((req, res, next) => {
     const error = new Error(
-        `Route not found: ${req.method} ${req.originalUrl}`
+        `Route not found: ${req.method} ${req.originalUrl}`,
     );
 
     error.statusCode = 404;
@@ -72,7 +91,8 @@ app.use((req, res, next) => {
     next(error);
 });
 
-// Global error handler
+
+
 app.use(errorMiddleware);
 
 export default app;
