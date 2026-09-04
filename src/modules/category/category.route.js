@@ -1,3 +1,4 @@
+// src/modules/category/category.route.js
 import { Router } from "express";
 
 import {
@@ -14,49 +15,51 @@ import checkRoleMiddleware from "../../middlewares/role-middleware.js";
 
 const router = Router();
 
-// Public
-
-// Get all categories
+//get categories
 router.get(
     "/",
     getCategories,
 );
 
-// Get category by slug
+//get category by slug
 router.get(
     "/slug/:slug",
     getCategoryBySlugController,
 );
 
-// Get category by ID
+//get category
 router.get(
     "/:id",
     getCategory,
 );
 
-// Admin
-
-// Admin creates category
+//create category
 router.post(
     "/",
     authMiddleware,
-    checkRoleMiddleware(["admin"]),
+    checkRoleMiddleware(
+        "super_admin",
+    ),
     createCategory,
 );
 
-// Admin updates category
+//update category
 router.patch(
     "/:id",
     authMiddleware,
-    checkRoleMiddleware(["admin"]),
+    checkRoleMiddleware(
+        "super_admin",
+    ),
     updateCategory,
 );
 
-// Admin deletes category
+//delete category
 router.delete(
     "/:id",
     authMiddleware,
-    checkRoleMiddleware(["admin"]),
+    checkRoleMiddleware(
+        "super_admin",
+    ),
     deleteCategory,
 );
 
