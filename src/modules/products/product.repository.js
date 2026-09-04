@@ -1,9 +1,12 @@
+// src/modules/products/product.repository.js
 import Product from "./product.model.js";
 
 export const createProduct = async (
   productData,
 ) => {
-  return Product.create(productData);
+  return Product.create(
+    productData,
+  );
 };
 
 export const findProductById = async (
@@ -19,11 +22,10 @@ export const findProducts = async ({
   filter,
   skip,
   limit,
+  sort,
 }) => {
   return Product.find(filter)
-    .sort({
-      createdAt: -1,
-    })
+    .sort(sort)
     .skip(skip)
     .limit(limit)
     .lean();
@@ -32,27 +34,31 @@ export const findProducts = async ({
 export const countProducts = async (
   filter,
 ) => {
-  return Product.countDocuments(filter);
+  return Product.countDocuments(
+    filter,
+  );
 };
 
-export const updateProductById = async (
-  productId,
-  updateData,
-) => {
-  return Product.findOneAndUpdate(
-    {
-      _id: productId,
-      isDeleted: false,
-    },
-    {
-      $set: updateData,
-    },
-    {
-      returnDocument: "after",
-      runValidators: true,
-    },
-  ).lean();
-};
+export const updateProductById =
+  async (
+    productId,
+    updateData,
+  ) => {
+    return Product.findOneAndUpdate(
+      {
+        _id: productId,
+        isDeleted: false,
+      },
+      {
+        $set: updateData,
+      },
+      {
+        returnDocument:
+          "after",
+        runValidators: true,
+      },
+    ).lean();
+  };
 
 export const softDeleteProductById =
   async (productId) => {
@@ -65,10 +71,12 @@ export const softDeleteProductById =
         $set: {
           isDeleted: true,
           isFeatured: false,
+          featuredPriority: 0,
         },
       },
       {
-        returnDocument: "after",
+        returnDocument:
+          "after",
       },
     ).lean();
   };
@@ -93,7 +101,8 @@ export const updateProductReviewStats =
         },
       },
       {
-        returnDocument: "after",
+        returnDocument:
+          "after",
       },
     ).lean();
   };
@@ -102,6 +111,7 @@ export const updateProductFeaturedById =
   async (
     productId,
     isFeatured,
+    featuredPriority = 0,
   ) => {
     return Product.findOneAndUpdate(
       {
@@ -111,10 +121,15 @@ export const updateProductFeaturedById =
       {
         $set: {
           isFeatured,
+          featuredPriority:
+            isFeatured
+              ? featuredPriority
+              : 0,
         },
       },
       {
-        returnDocument: "after",
+        returnDocument:
+          "after",
         runValidators: true,
       },
     ).lean();
@@ -136,7 +151,8 @@ export const incrementProductTracking =
         },
       },
       {
-        returnDocument: "after",
+        returnDocument:
+          "after",
       },
     ).lean();
   };
@@ -153,11 +169,13 @@ export const incrementProductPurchaseCount =
       },
       {
         $inc: {
-          purchaseCount: quantity,
+          purchaseCount:
+            quantity,
         },
       },
       {
-        returnDocument: "after",
+        returnDocument:
+          "after",
       },
     ).lean();
   };
@@ -193,23 +211,25 @@ export const findTopRatedProducts =
       .lean();
   };
 
-export const getTotalPurchaseCount = async (
-  filter,
-) => {
-  const result =
-    await Product.aggregate([
-      {
-        $match: filter,
-      },
-      {
-        $group: {
-          _id: null,
-          totalPurchases: {
-            $sum: "$purchaseCount",
+export const getTotalPurchaseCount =
+  async (filter) => {
+    const result =
+      await Product.aggregate([
+        {
+          $match: filter,
+        },
+        {
+          $group: {
+            _id: null,
+            totalPurchases: {
+              $sum: "$purchaseCount",
+            },
           },
         },
-      },
-    ]);
+      ]);
 
-  return result[0]?.totalPurchases || 0;
-};
+    return (
+      result[0]
+        ?.totalPurchases || 0
+    );
+  };
