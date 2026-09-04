@@ -1,314 +1,519 @@
+// src/modules/reviews/review.service.js
 import {
-  createReview as createReviewRepository,
-  deleteReviewById,
-  findReviewById,
-  findReviews,
-  getProductReviewStats,
-  getShopReviewStats,
+    createReview as createReviewRepository,
+    deleteReviewById,
+    findReviewById,
+    findReviews,
+    countReviews,
+    getProductReviewStats,
+    getShopReviewStats,
+    updateReviewStatus,
 } from "./review.repository.js";
 
 import {
-  findProductById,
-  updateProductReviewStats,
+    findProductById,
+    updateProductReviewStats,
 } from "../products/product.repository.js";
 
 import {
-  findShopById,
-  updateShopReviewStats,
+    findShopById,
+    updateShopReviewStats,
 } from "../shops/shop.repository.js";
 
 const createError = (
-  message,
-  statusCode,
+    message,
+    statusCode,
 ) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-
-  return error;
-};
-
-// Update product rating cache
-const updateProductRating = async (
-  productId,
-) => {
-  const {
-    averageRating,
-    reviewCount,
-  } =
-    await getProductReviewStats(
-      productId,
+    const error = new Error(
+        message,
     );
 
-  await updateProductReviewStats(
-    productId,
-    {
-      averageRating,
-      reviewCount,
-    },
-  );
+    error.statusCode =
+        statusCode;
+
+    return error;
 };
 
-// Update shop rating cache
+const updateProductRating =
+    async (
+        productId,
+    ) => {
+        const {
+            averageRating,
+            reviewCount,
+        } =
+            await getProductReviewStats(
+                productId,
+            );
+
+        await updateProductReviewStats(
+            productId,
+            {
+                averageRating,
+                reviewCount,
+            },
+        );
+    };
+
 const updateShopRating = async (
-  shopId,
-) => {
-  const {
-    rating,
-    totalReviews,
-  } =
-    await getShopReviewStats(shopId);
-
-  await updateShopReviewStats(
     shopId,
-    {
-      rating,
-      totalReviews,
-    },
-  );
+) => {
+    const {
+        rating,
+        totalReviews,
+    } =
+        await getShopReviewStats(
+            shopId,
+        );
+
+    await updateShopReviewStats(
+        shopId,
+        {
+            rating,
+            totalReviews,
+        },
+    );
 };
 
-// Create review
+//create review
 export const createReviewData =
-  async (
-    reviewData,
-    user,
-  ) => {
-    const userId =
-      user?.id || user?.sub;
+    async (
+        reviewData,
+        user,
+    ) => {
+        const userId =
+            user?.id ||
+            user?.sub;
 
-    if (!userId) {
-      throw createError(
-        "Authenticated user information is required",
-        401,
-      );
-    }
+        if (!userId) {
+            throw createError(
+                "Authenticated user information is required",
+                401,
+            );
+        }
 
-    /*
-     * PRODUCT REVIEW
-     */
-    if (
-      reviewData.reviewType ===
-      "product"
-    ) {
-      const product =
-        await findProductById(
-          reviewData.productId,
-        );
+        if (
+            user.role !==
+            "customer"
+        ) {
+            throw createError(
+                "Only customers can create reviews",
+                403,
+            );
+        }
 
-      if (!product) {
-        throw createError(
-          "Product not found",
-          404,
-        );
-      }
+        if (
+            reviewData.reviewType ===
+            "product"
+        ) {
+            const product =
+                await findProductById(
+                    reviewData.productId,
+                );
 
-      // Prevent duplicate product review
-      const existingReviews =
-        await findReviews({
-          reviewType: "product",
-          productId:
-            reviewData.productId,
-          userId: String(userId),
-        });
+            if (!product) {
+                throw createError(
+                    "Product not found",
+                    404,
+                );
+            }
 
-      if (existingReviews.length > 0) {
-        throw createError(
-          "You have already reviewed this product",
-          409,
-        );
-      }
-    }
+            const existing =
+                await findReviews({
+                    filter: {
+                        reviewType:
+                            "product",
+                        productId:
+                            reviewData.productId,
+                        userId: String(
+                            userId,
+                        ),
+                    },
+                    limit: 1,
+                });
 
-    /*
-     * SHOP REVIEW
-     */
-    if (
-      reviewData.reviewType ===
-      "shop"
-    ) {
-      const shop =
-        await findShopById(
-          reviewData.shopId,
-        );
+            if (existing.length) {
+                throw createError(
+                    "You have already reviewed this product",
+                    409,
+                );
+            }
+        }
 
-      if (!shop) {
-        throw createError(
-          "Shop not found",
-          404,
-        );
-      }
+        if (
+            reviewData.reviewType ===
+            "shop"
+        ) {
+            const shop =
+                await findShopById(
+                    reviewData.shopId,
+                );
 
-      // Prevent duplicate shop review
-      const existingReviews =
-        await findReviews({
-          reviewType: "shop",
-          shopId:
-            reviewData.shopId,
-          userId: String(userId),
-        });
+            if (!shop) {
+                throw createError(
+                    "Shop not found",
+                    404,
+                );
+            }
 
-      if (existingReviews.length > 0) {
-        throw createError(
-          "You have already reviewed this shop",
-          409,
-        );
-      }
-    }
+            const existing =
+                await findReviews({
+                    filter: {
+                        reviewType:
+                            "shop",
+                        shopId:
+                            reviewData.shopId,
+                        userId: String(
+                            userId,
+                        ),
+                    },
+                    limit: 1,
+                });
 
-    // Create review
-    const review =
-      await createReviewRepository({
-        ...reviewData,
+            if (existing.length) {
+                throw createError(
+                    "You have already reviewed this shop",
+                    409,
+                );
+            }
+        }
 
-        productId:
-          reviewData.reviewType ===
-          "product"
-            ? reviewData.productId
-            : null,
+        try {
+            const review =
+                await createReviewRepository(
+                    {
+                        ...reviewData,
+                        productId:
+                            reviewData.reviewType ===
+                            "product"
+                                ? reviewData.productId
+                                : null,
+                        shopId:
+                            reviewData.reviewType ===
+                            "shop"
+                                ? reviewData.shopId
+                                : null,
+                        userId:
+                            String(
+                                userId,
+                            ),
+                        userName:
+                            user?.name ||
+                            "Customer",
+                    },
+                );
 
-        shopId:
-          reviewData.reviewType ===
-          "shop"
-            ? reviewData.shopId
-            : null,
+            if (
+                review.reviewType ===
+                "product"
+            ) {
+                await updateProductRating(
+                    review.productId,
+                );
+            }
 
-        userId: String(userId),
+            if (
+                review.reviewType ===
+                "shop"
+            ) {
+                await updateShopRating(
+                    review.shopId,
+                );
+            }
 
-        userName:
-          user?.name || "Customer",
-      });
+            return review;
+        } catch (error) {
+            if (
+                error.code ===
+                11000
+            ) {
+                throw createError(
+                    "You have already reviewed this item",
+                    409,
+                );
+            }
 
-    // Update product rating
-    if (
-      review.reviewType ===
-      "product"
-    ) {
-      await updateProductRating(
-        review.productId,
-      );
-    }
+            throw error;
+        }
+    };
 
-    // Update shop rating
-    if (
-      review.reviewType ===
-      "shop"
-    ) {
-      await updateShopRating(
-        review.shopId,
-      );
-    }
-
-    return review;
-  };
-
-// Get reviews
+//get reviews
 export const getReviewsData =
-  async (query) => {
-    const {
-      reviewType,
-      productId,
-      shopId,
-    } = query;
+    async (
+        query,
+        user,
+    ) => {
+        const {
+            reviewType,
+            productId,
+            shopId,
+            rating,
+            status,
+            page,
+            limit,
+            sortOrder,
+        } = query;
 
-    const filter = {};
+        const filter = {};
 
-    if (reviewType) {
-      filter.reviewType =
-        reviewType;
-    }
+        if (reviewType) {
+            filter.reviewType =
+                reviewType;
+        }
 
-    if (productId) {
-      filter.productId =
-        productId;
-    }
+        if (productId) {
+            filter.productId =
+                productId;
+        }
 
-    if (shopId) {
-      filter.shopId = shopId;
-    }
+        if (shopId) {
+            filter.shopId =
+                shopId;
+        }
 
-    return findReviews(filter);
-  };
+        if (rating) {
+            filter.rating =
+                rating;
+        }
 
-// Get review by ID
+        if (
+            user?.role ===
+                "admin" ||
+            user?.role ===
+                "super_admin"
+        ) {
+            if (status) {
+                filter.status =
+                    status;
+            }
+        } else {
+            filter.status =
+                "published";
+        }
+
+        const skip =
+            (page - 1) *
+            limit;
+
+        const sort = {
+            createdAt:
+                sortOrder ===
+                "asc"
+                    ? 1
+                    : -1,
+        };
+
+        const [
+            reviews,
+            total,
+        ] = await Promise.all([
+            findReviews({
+                filter,
+                skip,
+                limit,
+                sort,
+            }),
+
+            countReviews(filter),
+        ]);
+
+        return {
+            reviews,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages:
+                    Math.ceil(
+                        total /
+                            limit,
+                    ),
+            },
+        };
+    };
+
+//get review
 export const getReviewByIdData =
-  async (reviewId) => {
-    const review =
-      await findReviewById(
+    async (
         reviewId,
-      );
+        user,
+    ) => {
+        const review =
+            await findReviewById(
+                reviewId,
+            );
 
-    if (!review) {
-      throw createError(
-        "Review not found",
-        404,
-      );
-    }
+        if (!review) {
+            throw createError(
+                "Review not found",
+                404,
+            );
+        }
 
-    return review;
-  };
+        if (
+            review.status !==
+                "published" &&
+            ![
+                "admin",
+                "super_admin",
+            ].includes(
+                user?.role,
+            )
+        ) {
+            throw createError(
+                "Review not found",
+                404,
+            );
+        }
 
-// Delete review
+        return review;
+    };
+
+//delete review
 export const deleteReviewData =
-  async (
-    reviewId,
-    user,
-  ) => {
-    const userId =
-      user?.id || user?.sub;
-
-    if (!userId) {
-      throw createError(
-        "Authenticated user information is required",
-        401,
-      );
-    }
-
-    const review =
-      await findReviewById(
+    async (
         reviewId,
-      );
+        user,
+    ) => {
+        const userId =
+            user?.id ||
+            user?.sub;
 
-    if (!review) {
-      throw createError(
-        "Review not found",
-        404,
-      );
-    }
+        if (!userId) {
+            throw createError(
+                "Authenticated user information is required",
+                401,
+            );
+        }
 
-    // Only review owner can delete
-    if (
-      String(review.userId) !==
-      String(userId)
-    ) {
-      throw createError(
-        "You are not allowed to delete this review",
-        403,
-      );
-    }
+        const review =
+            await findReviewById(
+                reviewId,
+            );
 
-    await deleteReviewById(
-      reviewId,
-    );
+        if (!review) {
+            throw createError(
+                "Review not found",
+                404,
+            );
+        }
 
-    // Recalculate product rating
-    if (
-      review.reviewType ===
-      "product"
-    ) {
-      await updateProductRating(
-        review.productId,
-      );
-    }
+        const isOwner =
+            String(
+                review.userId,
+            ) ===
+            String(userId);
 
-    // Recalculate shop rating
-    if (
-      review.reviewType ===
-      "shop"
-    ) {
-      await updateShopRating(
-        review.shopId,
-      );
-    }
+        const canModerate =
+            [
+                "admin",
+                "super_admin",
+            ].includes(
+                user.role,
+            );
 
-    return true;
-  };
+        if (
+            !isOwner &&
+            !canModerate
+        ) {
+            throw createError(
+                "You are not allowed to delete this review",
+                403,
+            );
+        }
+
+        await deleteReviewById(
+            reviewId,
+        );
+
+        if (
+            review.reviewType ===
+            "product"
+        ) {
+            await updateProductRating(
+                review.productId,
+            );
+        }
+
+        if (
+            review.reviewType ===
+            "shop"
+        ) {
+            await updateShopRating(
+                review.shopId,
+            );
+        }
+
+        return true;
+    };
+
+//moderate review
+export const moderateReviewData =
+    async (
+        reviewId,
+        status,
+        reason,
+        user,
+    ) => {
+        if (
+            ![
+                "admin",
+                "super_admin",
+            ].includes(
+                user?.role,
+            )
+        ) {
+            throw createError(
+                "You are not allowed to moderate reviews",
+                403,
+            );
+        }
+
+        const review =
+            await findReviewById(
+                reviewId,
+            );
+
+        if (!review) {
+            throw createError(
+                "Review not found",
+                404,
+            );
+        }
+
+        const updated =
+            await updateReviewStatus(
+                reviewId,
+                {
+                    status,
+                    moderatedBy:
+                        String(
+                            user.id,
+                        ),
+                    moderatedAt:
+                        new Date(),
+                    moderationReason:
+                        reason || "",
+                },
+            );
+
+        if (
+            review.reviewType ===
+            "product"
+        ) {
+            await updateProductRating(
+                review.productId,
+            );
+        }
+
+        if (
+            review.reviewType ===
+            "shop"
+        ) {
+            await updateShopRating(
+                review.shopId,
+            );
+        }
+
+        return updated;
+    };

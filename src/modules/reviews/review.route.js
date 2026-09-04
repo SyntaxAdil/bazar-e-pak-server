@@ -1,3 +1,4 @@
+// src/modules/reviews/review.route.js
 import { Router } from "express";
 
 import {
@@ -5,40 +6,58 @@ import {
     deleteReview,
     getReviewById,
     getReviews,
+    moderateReview,
 } from "./review.controller.js";
 
 import authMiddleware from "../../middlewares/auth.middleware.js";
 
+import checkRoleMiddleware from "../../middlewares/role-middleware.js";
+
 const router = Router();
 
-// Public Routes
-
-// Get all reviews or filter by product/shop
+//get reviews
 router.get(
     "/",
     getReviews,
 );
 
-// Get review by ID
+//get review
 router.get(
     "/:id",
     getReviewById,
 );
 
-// Authenticated Routes
-
-// Create review
+//create review
 router.post(
     "/",
     authMiddleware,
+    checkRoleMiddleware(
+        "customer",
+    ),
     createReview,
 );
 
-// Delete own review
+//delete review
 router.delete(
     "/:id",
     authMiddleware,
+    checkRoleMiddleware([
+        "customer",
+        "admin",
+        "super_admin",
+    ]),
     deleteReview,
+);
+
+//moderate review
+router.patch(
+    "/:id/moderation",
+    authMiddleware,
+    checkRoleMiddleware([
+        "admin",
+        "super_admin",
+    ]),
+    moderateReview,
 );
 
 export default router;

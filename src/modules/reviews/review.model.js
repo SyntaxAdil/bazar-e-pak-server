@@ -1,10 +1,14 @@
+// src/modules/reviews/review.model.js
 import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
     {
         reviewType: {
             type: String,
-            enum: ["product", "shop"],
+            enum: [
+                "product",
+                "shop",
+            ],
             required: true,
             index: true,
         },
@@ -48,27 +52,52 @@ const reviewSchema = new mongoose.Schema(
             trim: true,
             maxlength: 1000,
         },
+
+        status: {
+            type: String,
+            enum: [
+                "published",
+                "hidden",
+                "removed",
+            ],
+            default: "published",
+            index: true,
+        },
+
+        moderatedBy: {
+            type: String,
+            default: null,
+        },
+
+        moderatedAt: {
+            type: Date,
+            default: null,
+        },
+
+        moderationReason: {
+            type: String,
+            trim: true,
+            maxlength: 500,
+            default: "",
+        },
     },
     {
         timestamps: true,
     },
 );
 
-// Product review lookup
 reviewSchema.index({
     reviewType: 1,
     productId: 1,
     createdAt: -1,
 });
 
-// Shop review lookup
 reviewSchema.index({
     reviewType: 1,
     shopId: 1,
     createdAt: -1,
 });
 
-// One user can review a product only once
 reviewSchema.index(
     {
         reviewType: 1,
@@ -78,7 +107,8 @@ reviewSchema.index(
     {
         unique: true,
         partialFilterExpression: {
-            reviewType: "product",
+            reviewType:
+                "product",
             productId: {
                 $type: "objectId",
             },
@@ -86,7 +116,6 @@ reviewSchema.index(
     },
 );
 
-// One user can review a shop only once
 reviewSchema.index(
     {
         reviewType: 1,
@@ -106,6 +135,9 @@ reviewSchema.index(
 
 const Review =
     mongoose.models.Review ||
-    mongoose.model("Review", reviewSchema);
+    mongoose.model(
+        "Review",
+        reviewSchema,
+    );
 
 export default Review;
