@@ -1,3 +1,4 @@
+// src/modules/shops/shop.route.js
 import { Router } from "express";
 
 import {
@@ -15,68 +16,63 @@ import checkRoleMiddleware from "../../middlewares/role-middleware.js";
 
 const router = Router();
 
-// Public Routes
-
-// Get all shops
+//get shops
 router.get(
     "/",
     getShops,
 );
 
-// Get shop by slug
+//get shop by slug
 router.get(
     "/slug/:slug",
     getShopBySlug,
 );
 
-// Get shop by ID
+//get shop
 router.get(
     "/:shopId",
     getShopById,
 );
 
-// Seller routes
-
-// Create shop
+//create shop
 router.post(
     "/",
     authMiddleware,
-    checkRoleMiddleware("seller"),
+    checkRoleMiddleware(
+        "seller",
+    ),
     createShop,
 );
 
-// Update own shop
+//update shop
 router.patch(
     "/:shopId",
     authMiddleware,
-    checkRoleMiddleware(
+    checkRoleMiddleware([
         "seller",
-        "admin",
-    ),
+        "super_admin",
+    ]),
     updateShop,
 );
 
-// Delete own shop
+//delete shop
 router.delete(
     "/:shopId",
     authMiddleware,
-    checkRoleMiddleware(
+    checkRoleMiddleware([
         "seller",
-        "admin",
-    ),
+        "super_admin",
+    ]),
     deleteShop,
 );
 
-
-
-//  Admin Routes
-
-
-// Update shop status
+//update shop status
 router.patch(
     "/:shopId/status",
     authMiddleware,
-    checkRoleMiddleware("admin"),
+    checkRoleMiddleware(
+        "super_admin",
+    ),
     updateShopStatus,
 );
 

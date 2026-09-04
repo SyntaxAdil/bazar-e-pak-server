@@ -1,302 +1,399 @@
+// src/modules/shops/shop.service.js
 import mongoose from "mongoose";
 
 import {
-  countShops,
-  createShop,
-  deleteShopById,
-  findShopById,
-  findShopBySellerId,
-  findShopBySlug,
-  findShopDocumentById,
-  findShops,
-  updateShopById,
+    countShops,
+    createShop,
+    softDeleteShopById,
+    findShopById,
+    findShopBySellerId,
+    findShopBySlug,
+    findShopDocumentById,
+    findShops,
+    updateShopById,
 } from "./shop.repository.js";
 
 const createServiceError = (
-  message,
-  statusCode = 400,
+    message,
+    statusCode = 400,
 ) => {
-  const error = new Error(message);
+    const error = new Error(
+        message,
+    );
 
-  error.statusCode = statusCode;
+    error.statusCode =
+        statusCode;
 
-  return error;
+    return error;
 };
 
 const generateSlug = (name) => {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(
+            /[^a-z0-9\s-]/g,
+            "",
+        )
+        .replace(
+            /\s+/g,
+            "-",
+        )
+        .replace(
+            /-+/g,
+            "-",
+        );
 };
 
-const generateUniqueSlug = async (name) => {
-  const baseSlug = generateSlug(name);
+const generateUniqueSlug =
+    async (name) => {
+        const baseSlug =
+            generateSlug(name);
 
-  let slug = baseSlug;
-  let counter = 1;
+        let slug = baseSlug;
+        let counter = 1;
 
-  while (await findShopBySlug(slug)) {
-    slug = `${baseSlug}-${counter}`;
-    counter += 1;
-  }
+        while (
+            await findShopBySlug(
+                slug,
+            )
+        ) {
+            slug = `${baseSlug}-${counter}`;
+            counter += 1;
+        }
 
-  return slug;
-};
-
-export const createShopService = async ({
-  sellerId,
-  shopData,
-}) => {
-  if (!mongoose.isValidObjectId(sellerId)) {
-    throw createServiceError(
-      "Invalid seller ID",
-      400,
-    );
-  }
-
-  // One seller can currently own one shop.
-  const existingShop =
-    await findShopBySellerId(sellerId);
-
-  if (existingShop) {
-    throw createServiceError(
-      "You already have a shop",
-      409,
-    );
-  }
-
-  const slug = await generateUniqueSlug(
-    shopData.name,
-  );
-
-  try {
-    const shop = await createShop({
-      ...shopData,
-      sellerId,
-      slug,
-    });
-
-    return shop;
-  } catch (error) {
-    if (error.code === 11000) {
-      throw createServiceError(
-        "Shop with this information already exists",
-        409,
-      );
-    }
-
-    throw error;
-  }
-};
-
-export const listShopsService = async ({
-  page = 1,
-  limit = 20,
-  search,
-  status,
-  sellerId,
-}) => {
-  const query = {};
-
-  if (status) {
-    query.status = status;
-  }
-
-  if (sellerId) {
-    query.sellerId = sellerId;
-  }
-
-  if (search) {
-    query.$text = {
-      $search: search,
+        return slug;
     };
-  }
 
-  const skip = (page - 1) * limit;
+//create shop
+export const createShopService =
+    async ({
+        sellerId,
+        shopData,
+    }) => {
+        if (
+            !mongoose.isValidObjectId(
+                sellerId,
+            )
+        ) {
+            throw createServiceError(
+                "Invalid seller ID",
+                400,
+            );
+        }
 
-  const [shops, total] =
-    await Promise.all([
-      findShops({
-        query,
-        skip,
-        limit,
-      }),
+        const existingShop =
+            await findShopBySellerId(
+                sellerId,
+            );
 
-      countShops(query),
-    ]);
+        if (existingShop) {
+            throw createServiceError(
+                "You already have a shop",
+                409,
+            );
+        }
 
-  return {
-    shops,
+        const slug =
+            await generateUniqueSlug(
+                shopData.name,
+            );
 
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages:
-        Math.ceil(total / limit),
-    },
-  };
-};
+        try {
+            return await createShop({
+                ...shopData,
+                sellerId,
+                status: "pending",
+            });
+        } catch (error) {
+            if (
+                error.code ===
+                11000
+            ) {
+                throw createServiceError(
+                    "Shop with this information already exists",
+                    409,
+                );
+            }
 
-export const getShopByIdService = async (
-  shopId,
-) => {
-  if (!mongoose.isValidObjectId(shopId)) {
-    throw createServiceError(
-      "Invalid shop ID",
-      400,
-    );
-  }
+            throw error;
+        }
+    };
 
-  const shop = await findShopById(shopId);
-
-  if (!shop) {
-    throw createServiceError(
-      "Shop not found",
-      404,
-    );
-  }
-
-  return shop;
-};
-
-export const getShopBySlugService = async (
-  slug,
-) => {
-  const shop = await findShopBySlug(slug);
-
-  if (!shop) {
-    throw createServiceError(
-      "Shop not found",
-      404,
-    );
-  }
-
-  return shop;
-};
-
-export const updateShopService = async ({
-  shopId,
-  userId,
-  role,
-  updateData,
-}) => {
-  if (!mongoose.isValidObjectId(shopId)) {
-    throw createServiceError(
-      "Invalid shop ID",
-      400,
-    );
-  }
-
-  const shop =
-    await findShopDocumentById(shopId);
-
-  if (!shop) {
-    throw createServiceError(
-      "Shop not found",
-      404,
-    );
-  }
-
-  // Seller can only update their own shop.
-  if (
-    role !== "admin" &&
-    String(shop.sellerId) !==
-      String(userId)
-  ) {
-    throw createServiceError(
-      "You are not allowed to update this shop",
-      403,
-    );
-  }
-
-  const data = {
-    ...updateData,
-  };
-
-  // Generate a new slug if shop name changes.
-  if (
-    data.name &&
-    data.name !== shop.name
-  ) {
-    data.slug =
-      await generateUniqueSlug(data.name);
-  }
-
-  return updateShopById(
-    shopId,
-    data,
-  );
-};
-
-export const deleteShopService = async ({
-  shopId,
-  userId,
-  role,
-}) => {
-  if (!mongoose.isValidObjectId(shopId)) {
-    throw createServiceError(
-      "Invalid shop ID",
-      400,
-    );
-  }
-
-  const shop =
-    await findShopDocumentById(shopId);
-
-  if (!shop) {
-    throw createServiceError(
-      "Shop not found",
-      404,
-    );
-  }
-
-  // Seller can only delete their own shop.
-  if (
-    role !== "admin" &&
-    String(shop.sellerId) !==
-      String(userId)
-  ) {
-    throw createServiceError(
-      "You are not allowed to delete this shop",
-      403,
-    );
-  }
-
-  await deleteShopById(shopId);
-
-  return true;
-};
-
-export const updateShopStatusService =
-  async ({
-    shopId,
-    status,
-  }) => {
-    if (!mongoose.isValidObjectId(shopId)) {
-      throw createServiceError(
-        "Invalid shop ID",
-        400,
-      );
-    }
-
-    const shop =
-      await findShopDocumentById(shopId);
-
-    if (!shop) {
-      throw createServiceError(
-        "Shop not found",
-        404,
-      );
-    }
-
-    return updateShopById(
-      shopId,
-      {
+//list shops
+export const listShopsService =
+    async ({
+        page = 1,
+        limit = 20,
+        search,
         status,
-      },
-    );
-  };
+        sellerId,
+        city,
+        minRating,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+    }) => {
+        const query = {
+            isDeleted: false,
+        };
+
+        if (status) {
+            query.status =
+                status;
+        } else {
+            query.status =
+                "active";
+        }
+
+        if (sellerId) {
+            query.sellerId =
+                sellerId;
+        }
+
+        if (city) {
+            query.city = {
+                $regex: city,
+                $options: "i",
+            };
+        }
+
+        if (
+            minRating !==
+            undefined
+        ) {
+            query.rating = {
+                $gte: minRating,
+            };
+        }
+
+        if (search) {
+            query.$text = {
+                $search: search,
+            };
+        }
+
+        const sort = {
+            [sortBy]:
+                sortOrder ===
+                "asc"
+                    ? 1
+                    : -1,
+        };
+
+        const skip =
+            (page - 1) *
+            limit;
+
+        const [shops, total] =
+            await Promise.all([
+                findShops({
+                    query,
+                    skip,
+                    limit,
+                    sort,
+                }),
+
+                countShops(query),
+            ]);
+
+        return {
+            shops,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages:
+                    Math.ceil(
+                        total /
+                            limit,
+                    ),
+            },
+        };
+    };
+
+//get shop
+export const getShopByIdService =
+    async (
+        shopId,
+    ) => {
+        if (
+            !mongoose.isValidObjectId(
+                shopId,
+            )
+        ) {
+            throw createServiceError(
+                "Invalid shop ID",
+                400,
+            );
+        }
+
+        const shop =
+            await findShopById(
+                shopId,
+            );
+
+        if (!shop) {
+            throw createServiceError(
+                "Shop not found",
+                404,
+            );
+        }
+
+        return shop;
+    };
+
+//get shop by slug
+export const getShopBySlugService =
+    async (
+        slug,
+    ) => {
+        const shop =
+            await findShopBySlug(
+                slug,
+            );
+
+        if (!shop) {
+            throw createServiceError(
+                "Shop not found",
+                404,
+            );
+        }
+
+        return shop;
+    };
+
+//update shop
+export const updateShopService =
+    async ({
+        shopId,
+        userId,
+        role,
+        updateData,
+    }) => {
+        if (
+            !mongoose.isValidObjectId(
+                shopId,
+            )
+        ) {
+            throw createServiceError(
+                "Invalid shop ID",
+                400,
+            );
+        }
+
+        const shop =
+            await findShopDocumentById(
+                shopId,
+            );
+
+        if (!shop) {
+            throw createServiceError(
+                "Shop not found",
+                404,
+            );
+        }
+
+        if (
+            role !==
+                "super_admin" &&
+            String(
+                shop.sellerId,
+            ) !==
+                String(userId)
+        ) {
+            throw createServiceError(
+                "You are not allowed to update this shop",
+                403,
+            );
+        }
+
+        const data = {
+            ...updateData,
+        };
+
+        if (
+            data.name &&
+            data.name !==
+                shop.name
+        ) {
+            data.slug =
+                await generateUniqueSlug(
+                    data.name,
+                );
+        }
+
+        delete data.status;
+        delete data.sellerId;
+        delete data.rating;
+        delete data.totalReviews;
+        delete data.isDeleted;
+
+        return updateShopById(
+            shopId,
+            data,
+        );
+    };
+
+//delete shop
+export const deleteShopService =
+    async ({
+        shopId,
+        userId,
+        role,
+    }) => {
+        const shop =
+            await findShopDocumentById(
+                shopId,
+            );
+
+        if (!shop) {
+            throw createServiceError(
+                "Shop not found",
+                404,
+            );
+        }
+
+        if (
+            role !==
+                "super_admin" &&
+            String(
+                shop.sellerId,
+            ) !==
+                String(userId)
+        ) {
+            throw createServiceError(
+                "You are not allowed to delete this shop",
+                403,
+            );
+        }
+
+        return softDeleteShopById(
+            shopId,
+        );
+    };
+
+//update shop status
+export const updateShopStatusService =
+    async ({
+        shopId,
+        status,
+    }) => {
+        const shop =
+            await findShopDocumentById(
+                shopId,
+            );
+
+        if (!shop) {
+            throw createServiceError(
+                "Shop not found",
+                404,
+            );
+        }
+
+        return updateShopById(
+            shopId,
+            {
+                status,
+            },
+        );
+    };

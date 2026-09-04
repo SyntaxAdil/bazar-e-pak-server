@@ -1,108 +1,143 @@
+// src/modules/shops/shop.repository.js
 import Shop from "./shop.model.js";
 
 export const createShop = (
-  shopData,
+    shopData,
 ) => {
-  return Shop.create(shopData);
+    return Shop.create(shopData);
 };
 
 export const findShopById = (
-  shopId,
+    shopId,
 ) => {
-  return Shop.findById(shopId).lean();
+    return Shop.findOne({
+        _id: shopId,
+        isDeleted: false,
+    }).lean();
 };
 
 export const findShopDocumentById = (
-  shopId,
+    shopId,
 ) => {
-  return Shop.findById(shopId);
+    return Shop.findOne({
+        _id: shopId,
+        isDeleted: false,
+    });
 };
 
 export const findShopBySlug = (
-  slug,
-) => {
-  return Shop.findOne({
     slug,
-  }).lean();
+) => {
+    return Shop.findOne({
+        slug,
+        isDeleted: false,
+    }).lean();
 };
 
 export const findShopBySellerId = (
-  sellerId,
-) => {
-  return Shop.findOne({
     sellerId,
-  }).lean();
+) => {
+    return Shop.findOne({
+        sellerId,
+        isDeleted: false,
+    }).lean();
 };
 
-export const findShopDocumentBySellerId = (
-  sellerId,
-) => {
-  return Shop.findOne({
-    sellerId,
-  });
-};
+export const findShopDocumentBySellerId =
+    (
+        sellerId,
+    ) => {
+        return Shop.findOne({
+            sellerId,
+            isDeleted: false,
+        });
+    };
 
 export const updateShopById = (
-  shopId,
-  updateData,
-) => {
-  return Shop.findByIdAndUpdate(
     shopId,
-    {
-      $set: updateData,
-    },
-    {
-      returnDocument: "after",
-      runValidators: true,
-    },
-  ).lean();
+    updateData,
+) => {
+    return Shop.findOneAndUpdate(
+        {
+            _id: shopId,
+            isDeleted: false,
+        },
+        {
+            $set: updateData,
+        },
+        {
+            returnDocument:
+                "after",
+            runValidators: true,
+        },
+    ).lean();
 };
 
-export const deleteShopById = (
-  shopId,
+export const softDeleteShopById = (
+    shopId,
 ) => {
-  return Shop.findByIdAndDelete(shopId);
+    return Shop.findOneAndUpdate(
+        {
+            _id: shopId,
+            isDeleted: false,
+        },
+        {
+            $set: {
+                isDeleted: true,
+                status: "inactive",
+            },
+        },
+        {
+            returnDocument:
+                "after",
+        },
+    ).lean();
 };
 
 export const findShops = ({
-  query,
-  skip,
-  limit,
+    query,
+    skip,
+    limit,
+    sort,
 }) => {
-  return Shop.find(query)
-    .sort({
-      createdAt: -1,
-    })
-    .skip(skip)
-    .limit(limit)
-    .lean();
+    return Shop.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean();
 };
 
 export const countShops = (
-  query,
+    query,
 ) => {
-  return Shop.countDocuments(query);
+    return Shop.countDocuments(
+        query,
+    );
 };
 
-// Update cached shop review statistics
-export const updateShopReviewStats = (
-  shopId,
-  {
-    rating,
-    totalReviews,
-  },
-) => {
-  return Shop.findByIdAndUpdate(
-    shopId,
-    {
-      $set: {
-        rating,
-        totalReviews,
-      },
-    },
-    {
-      returnDocument: "after",
-      runValidators: true,
-    },
-  ).lean();
-};
+export const updateShopReviewStats =
+    (
+        shopId,
+        {
+            rating,
+            totalReviews,
+        },
+    ) => {
+        return Shop.findOneAndUpdate(
+            {
+                _id: shopId,
+                isDeleted: false,
+            },
+            {
+                $set: {
+                    rating,
+                    totalReviews,
+                },
+            },
+            {
+                returnDocument:
+                    "after",
+                runValidators: true,
+            },
+        ).lean();
+    };
