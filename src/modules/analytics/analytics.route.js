@@ -1,32 +1,51 @@
-// src/modules/analytics/analytics.route.js
 import { Router } from "express";
-
-import {
-    trackEvent,
-    getAnalyticsController,
-} from "./analytics.controller.js";
-
 import authMiddleware from "../../middlewares/auth.middleware.js";
 import checkRoleMiddleware from "../../middlewares/role-middleware.js";
-
-const router = Router();
-
-//track event
-router.post(
-    "/events",
-    trackEvent,
+import {
+  trackEvent,
+  getAnalyticsController,
+  dashboardAnalytics,
+  productAnalytics,
+  shopAnalytics,
+  sellerAnalytics,
+  productRankings,
+} from "./analytics.controller.js";
+const r = Router();
+r.post("/events", trackEvent);
+r.get(
+  "/",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  getAnalyticsController,
 );
-
-//get analytics
-router.get(
-    "/",
-    authMiddleware,
-    checkRoleMiddleware([
-        "seller",
-        "admin",
-        "super_admin",
-    ]),
-    getAnalyticsController,
+r.get(
+  "/dashboard",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  dashboardAnalytics,
 );
-
-export default router;
+r.get(
+  "/products/:id",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  productAnalytics,
+);
+r.get(
+  "/shops/:id",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  shopAnalytics,
+);
+r.get(
+  "/seller",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  sellerAnalytics,
+);
+r.get(
+  "/rankings/products",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "seller", "super_admin"]),
+  productRankings,
+);
+export default r;

@@ -19,6 +19,8 @@ import {
     findShopById,
     updateShopReviewStats,
 } from "../shops/shop.repository.js";
+import { safeTrack } from "../../utils/analytics.js";
+import { safeAudit } from "../../utils/audit.js";
 
 const createError = (
     message,
@@ -221,6 +223,7 @@ export const createReviewData =
                 );
             }
 
+            safeTrack({eventType:"REVIEW_CREATED",productId:review.productId||undefined,shopId:review.shopId||undefined,metadata:{reviewId:String(review._id)}},user);
             return review;
         } catch (error) {
             if (
@@ -404,13 +407,7 @@ export const deleteReviewData =
             ) ===
             String(userId);
 
-        const canModerate =
-            [
-                "admin",
-                "super_admin",
-            ].includes(
-                user.role,
-            );
+        const canModerate = user.role === "super_admin" || (user.role === "admin" && user.permissions?.includes("reviews.moderate"));
 
         if (
             !isOwner &&
@@ -444,6 +441,7 @@ export const deleteReviewData =
             );
         }
 
+        await safeAudit({actor:user,action:"REVIEW_REMOVED",resourceType:"Review",resourceId:reviewId,previousState:review,newState:{status:"removed"}});
         return true;
     };
 
@@ -455,14 +453,7 @@ export const moderateReviewData =
         reason,
         user,
     ) => {
-        if (
-            ![
-                "admin",
-                "super_admin",
-            ].includes(
-                user?.role,
-            )
-        ) {
+        if (!(user?.role === "super_admin" || (user?.role === "admin" && user.permissions?.includes("reviews.moderate")))) {
             throw createError(
                 "You are not allowed to moderate reviews",
                 403,
@@ -515,5 +506,6 @@ export const moderateReviewData =
             );
         }
 
+        await safeAudit({actor:user,action:"REVIEW_MODERATED",resourceType:"Review",resourceId:reviewId,previousState:review,newState:updated,reason:reason||""});
         return updated;
     };

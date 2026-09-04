@@ -91,3 +91,7 @@ export const updateUserRoleSchema =
             "admin",
         ]),
     });
+
+export const updateAdminPermissionsSchema = z.object({
+    permissions: z.array(z.string().trim().min(1)).max(50),
+});

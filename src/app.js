@@ -8,9 +8,11 @@ import { connectDB } from "./config/database.js";
 import apiRoutes from "./routes/index.js";
 
 import errorMiddleware from "./middlewares/error.middleware.js";
+import { incrementMetric } from "./utils/system-metrics.js";
 
 const app = express();
 
+app.use((req, res, next) => { incrementMetric("requests"); next(); });
 
 app.use(helmet());
 
@@ -59,6 +61,7 @@ app.get("/health", async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: "Bazar-e-Pak server is running",
+            data: { api: "up", database: "up", uptimeSeconds: Math.round(process.uptime()) },
         });
     } catch (error) {
         next(error);
@@ -92,6 +95,8 @@ app.use((req, res, next) => {
 });
 
 
+
+app.use((err, req, res, next) => { incrementMetric("errors"); next(err); });
 
 app.use(errorMiddleware);
 

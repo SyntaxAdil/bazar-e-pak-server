@@ -5,6 +5,7 @@ import {
     updateUserRole,
     updateUserStatus,
 } from "./user.repository.js";
+import { safeAudit } from "../../utils/audit.js";
 
 const createError = (
     message,
@@ -181,10 +182,9 @@ export const updateUserStatusService =
             updateData.isBlocked = false;
         }
 
-        return updateUserStatus(
-            userId,
-            updateData,
-        );
+        const updated = await updateUserStatus(userId, updateData);
+        await safeAudit({actor:requestingUser,action:"USER_STATUS_CHANGED",resourceType:"User",resourceId:userId,previousState:{status:targetUser.status,isBlocked:targetUser.isBlocked},newState:updateData});
+        return updated;
     };
 
 //change user role
@@ -235,8 +235,7 @@ export const updateUserRoleService =
             );
         }
 
-        return updateUserRole(
-            userId,
-            role,
-        );
+        const updated = await updateUserRole(userId, role);
+        await safeAudit({actor:requestingUser,action:"USER_ROLE_CHANGED",resourceType:"User",resourceId:userId,previousState:{role:targetUser.role},newState:{role}});
+        return updated;
     };

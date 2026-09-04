@@ -22,6 +22,7 @@ export const findUsers = async ({
                     phoneNumber: 1,
                     isBlocked: 1,
                     status: 1,
+                    permissions: 1,
                     createdAt: 1,
                     updatedAt: 1,
                 },

@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema(
             default: "active",
             index: true,
         },
+
+        permissions: {
+            type: [String],
+            default: [],
+        },
     },
     {
         timestamps: true,

@@ -5,6 +5,7 @@ import {
     getUsers,
     updateUserRole,
     updateUserStatus,
+    updatePermissions,
 } from "./user.controller.js";
 
 import authMiddleware from "../../middlewares/auth.middleware.js";
@@ -36,6 +37,13 @@ router.patch(
 );
 
 //update user role
+router.patch(
+    "/:userId/permissions",
+    authMiddleware,
+    checkRoleMiddleware("super_admin"),
+    updatePermissions,
+);
+
 router.patch(
     "/:userId/role",
     authMiddleware,

@@ -15,27 +15,15 @@ import {
   deleteCategory as deleteCategoryService,
 } from "./category.service.js";
 
-export const createCategory = async (
-  req,
-  res,
-  next,
-) => {
+export const createCategory = async (req, res, next) => {
   try {
-    const validatedData =
-      createCategorySchema.parse(
-        req.body,
-      );
+    const validatedData = createCategorySchema.parse(req.body);
 
-    const category =
-      await createCategoryService(
-        validatedData,
-        req.user,
-      );
+    const category = await createCategoryService(validatedData, req.user);
 
     return res.status(201).json({
       success: true,
-      message:
-        "Category created successfully",
+      message: "Category created successfully",
       data: category,
     });
   } catch (error) {
@@ -43,24 +31,15 @@ export const createCategory = async (
   }
 };
 
-export const getCategory = async (
-  req,
-  res,
-  next,
-) => {
+export const getCategory = async (req, res, next) => {
   try {
-    const { id } =
-      categoryIdSchema.parse(
-        req.params,
-      );
+    const { id } = categoryIdSchema.parse(req.params);
 
-    const category =
-      await getCategoryById(id);
+    const category = await getCategoryById(id);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Category fetched successfully",
+      message: "Category fetched successfully",
       data: category,
     });
   } catch (error) {
@@ -68,46 +47,31 @@ export const getCategory = async (
   }
 };
 
-export const getCategoryBySlugController =
-  async (req, res, next) => {
-    try {
-      const { slug } =
-        categorySlugSchema.parse(
-          req.params,
-        );
-
-      const category =
-        await getCategoryBySlug(slug);
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "Category fetched successfully",
-        data: category,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-export const getCategories = async (
-  req,
-  res,
-  next,
-) => {
+export const getCategoryBySlugController = async (req, res, next) => {
   try {
-    const query =
-      categoryQuerySchema.parse(
-        req.query,
-      );
+    const { slug } = categorySlugSchema.parse(req.params);
 
-    const result =
-      await listCategories(query);
+    const category = await getCategoryBySlug(slug);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Categories fetched successfully",
+      message: "Category fetched successfully",
+      data: category,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCategories = async (req, res, next) => {
+  try {
+    const query = categoryQuerySchema.parse(req.query);
+
+    const result = await listCategories(query);
+
+    return res.status(200).json({
+      success: true,
+      message: "Categories fetched successfully",
       data: result.categories,
       pagination: result.pagination,
     });
@@ -116,33 +80,17 @@ export const getCategories = async (
   }
 };
 
-export const updateCategory = async (
-  req,
-  res,
-  next,
-) => {
+export const updateCategory = async (req, res, next) => {
   try {
-    const { id } =
-      categoryIdSchema.parse(
-        req.params,
-      );
+    const { id } = categoryIdSchema.parse(req.params);
 
-    const validatedData =
-      updateCategorySchema.parse(
-        req.body,
-      );
+    const validatedData = updateCategorySchema.parse(req.body);
 
-    const category =
-      await updateCategoryService(
-        id,
-        validatedData,
-        req.user,
-      );
+    const category = await updateCategoryService(id, validatedData, req.user);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Category updated successfully",
+      message: "Category updated successfully",
       data: category,
     });
   } catch (error) {
@@ -150,26 +98,15 @@ export const updateCategory = async (
   }
 };
 
-export const deleteCategory = async (
-  req,
-  res,
-  next,
-) => {
+export const deleteCategory = async (req, res, next) => {
   try {
-    const { id } =
-      categoryIdSchema.parse(
-        req.params,
-      );
+    const { id } = categoryIdSchema.parse(req.params);
 
-    await deleteCategoryService(
-      id,
-      req.user,
-    );
+    await deleteCategoryService(id, req.user);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Category deleted successfully",
+      message: "Category deleted successfully",
     });
   } catch (error) {
     next(error);

@@ -10,7 +10,10 @@ import {
     userQuerySchema,
     updateUserRoleSchema,
     updateUserStatusSchema,
+    updateAdminPermissionsSchema,
 } from "./user.validation.js";
+import { updateAdminPermissions } from "./user-permission.js";
+import { safeAudit } from "../../utils/audit.js";
 
 //get users
 export const getUsers = async (
@@ -41,6 +44,16 @@ export const getUsers = async (
     } catch (error) {
         next(error);
     }
+};
+
+export const updatePermissions = async (req, res, next) => {
+    try {
+        const { userId } = userIdSchema.parse(req.params);
+        const { permissions } = updateAdminPermissionsSchema.parse(req.body);
+        const user = await updateAdminPermissions(userId, permissions, req.user);
+        await safeAudit({ actor:req.user, action:"ADMIN_PERMISSIONS_CHANGED", resourceType:"User", resourceId:userId, newState:{permissions}, metadata:{} });
+        res.json({success:true,message:"Admin permissions updated successfully",data:user});
+    } catch (error) { next(error); }
 };
 
 //update user status

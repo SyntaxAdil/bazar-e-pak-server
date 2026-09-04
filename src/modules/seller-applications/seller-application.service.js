@@ -9,6 +9,8 @@ import {
 } from "./seller-application.repository.js";
 
 import User from "../users/user.model.js";
+import { safeAudit } from "../../utils/audit.js";
+import Shop from "../shops/shop.model.js";
 
 const createError = (
     message,
@@ -76,7 +78,7 @@ export const applySeller =
             );
         }
 
-        return createApplication({
+        const application = await createApplication({
             ...data,
             userId: String(
                 user.id,
@@ -89,6 +91,8 @@ export const applySeller =
             rejectionReason:
                 "",
         });
+        await safeAudit({actor:user,action:"SELLER_APPLICATION_CREATED",resourceType:"SellerApplication",resourceId:application._id,newState:application});
+        return application;
     };
 
 //get application
@@ -248,6 +252,8 @@ export const reviewSellerApplication =
                 },
             );
 
+        await safeAudit({actor:user,action:`SELLER_APPLICATION_${String(data.status).toUpperCase()}`,resourceType:"SellerApplication",resourceId:id,previousState:application,newState:reviewed,reason:data.rejectionReason||""});
+
         if (
             data.status ===
             "approved"
@@ -266,6 +272,7 @@ export const reviewSellerApplication =
                     },
                 },
             );
+            await Shop.updateMany({ sellerId: application.userId, isDeleted: false }, { $set: { status: "active" } });
         }
 
         if (
@@ -286,6 +293,9 @@ export const reviewSellerApplication =
                     },
                 },
             );
+            if (data.status === "suspended" || data.status === "rejected") {
+                await Shop.updateMany({ sellerId: application.userId, isDeleted: false }, { $set: { status: data.status === "suspended" ? "suspended" : "rejected" } });
+            }
         }
 
         return reviewed;

@@ -2,11 +2,11 @@
 import { Router } from "express";
 
 import {
-    getCartController,
-    addToCartController,
-    updateCartItemController,
-    removeCartItemController,
-    clearCartController,
+  getCartController,
+  addToCartController,
+  updateCartItemController,
+  removeCartItemController,
+  clearCartController,
 } from "./cart.controller.js";
 
 import authMiddleware from "../../middlewares/auth.middleware.js";
@@ -17,52 +17,42 @@ const router = Router();
 
 //get cart
 router.get(
-    "/",
-    authMiddleware,
-    checkRoleMiddleware(
-        "customer",
-    ),
-    getCartController,
+  "/",
+  authMiddleware,
+  checkRoleMiddleware("customer"),
+  getCartController,
 );
 
 //add item
 router.post(
-    "/items",
-    authMiddleware,
-    checkRoleMiddleware(
-        "customer",
-    ),
-    addToCartController,
+  "/items",
+  authMiddleware,
+  checkRoleMiddleware("customer"),
+  addToCartController,
 );
 
 //update item
 router.patch(
-    "/items/:productId",
-    authMiddleware,
-    checkRoleMiddleware(
-        "customer",
-    ),
-    updateCartItemController,
+  "/items/:productId",
+  authMiddleware,
+  checkRoleMiddleware("customer"),
+  updateCartItemController,
 );
 
 //remove item
 router.delete(
-    "/items/:productId",
-    authMiddleware,
-    checkRoleMiddleware(
-        "customer",
-    ),
-    removeCartItemController,
+  "/items/:productId",
+  authMiddleware,
+  checkRoleMiddleware("customer"),
+  removeCartItemController,
 );
 
 //clear cart
 router.delete(
-    "/",
-    authMiddleware,
-    checkRoleMiddleware(
-        "customer",
-    ),
-    clearCartController,
+  "/",
+  authMiddleware,
+  checkRoleMiddleware("customer"),
+  clearCartController,
 );
 
 export default router;

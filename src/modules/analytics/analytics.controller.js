@@ -1,73 +1,83 @@
-// src/modules/analytics/analytics.controller.js
 import {
-    analyticsEventSchema,
-    analyticsQuerySchema,
+  analyticsEventSchema,
+  analyticsQuerySchema,
 } from "./analytics.validation.js";
-
 import {
-    trackAnalyticsEvent,
-    getAnalytics,
+  trackAnalyticsEvent,
+  getAnalytics,
+  getDashboardAnalytics,
+  getProductAnalytics,
+  getShopAnalytics,
+  getSellerAnalytics,
+  getProductRankings,
 } from "./analytics.service.js";
-
-//track event
-export const trackEvent = async (
-    req,
-    res,
-    next,
-) => {
-    try {
-        const data =
-            analyticsEventSchema.parse(
-                req.body,
-            );
-
-        const event =
-            await trackAnalyticsEvent(
-                data,
-                req.user,
-            );
-
-        return res
-            .status(201)
-            .json({
-                success: true,
-                message:
-                    "Analytics event tracked successfully",
-                data: event,
-            });
-    } catch (error) {
-        next(error);
-    }
+export const trackEvent = async (req, res, next) => {
+  try {
+    const d = analyticsEventSchema.parse(req.body);
+    res
+      .status(201)
+      .json({ success: true, data: await trackAnalyticsEvent(d, req.user) });
+  } catch (e) {
+    next(e);
+  }
 };
-
-//get analytics
-export const getAnalyticsController =
-    async (
-        req,
-        res,
-        next,
-    ) => {
-        try {
-            const query =
-                analyticsQuerySchema.parse(
-                    req.query,
-                );
-
-            const analytics =
-                await getAnalytics(
-                    query,
-                    req.user,
-                );
-
-            return res
-                .status(200)
-                .json({
-                    success: true,
-                    message:
-                        "Analytics fetched successfully",
-                    data: analytics,
-                });
-        } catch (error) {
-            next(error);
-        }
-    };
+export const getAnalyticsController = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getAnalytics(analyticsQuerySchema.parse(req.query), req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+export const dashboardAnalytics = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getDashboardAnalytics(req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+export const productAnalytics = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getProductAnalytics(req.params.id, req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+export const shopAnalytics = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getShopAnalytics(req.params.id, req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+export const sellerAnalytics = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getSellerAnalytics(req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+export const productRankings = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getProductRankings(req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
