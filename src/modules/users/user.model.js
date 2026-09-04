@@ -1,3 +1,4 @@
+// src/modules/users/user.model.js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -5,12 +6,14 @@ const userSchema = new mongoose.Schema(
         name: {
             type: String,
             trim: true,
+            default: "",
         },
 
         email: {
             type: String,
             trim: true,
             lowercase: true,
+            index: true,
         },
 
         emailVerified: {
@@ -20,7 +23,12 @@ const userSchema = new mongoose.Schema(
 
         role: {
             type: String,
-            enum: ["admin", "seller", "customer"],
+            enum: [
+                "customer",
+                "seller",
+                "admin",
+                "super_admin",
+            ],
             default: "customer",
             index: true,
         },
@@ -36,6 +44,17 @@ const userSchema = new mongoose.Schema(
             default: false,
             index: true,
         },
+
+        status: {
+            type: String,
+            enum: [
+                "active",
+                "suspended",
+                "banned",
+            ],
+            default: "active",
+            index: true,
+        },
     },
     {
         timestamps: true,
@@ -45,6 +64,11 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({
     role: 1,
+    createdAt: -1,
+});
+
+userSchema.index({
+    status: 1,
     createdAt: -1,
 });
 

@@ -1,53 +1,94 @@
-import { findAllUsers, findUserById, updateUserBlockedStatus } from "./user.repository.js";
+// src/modules/users/user.repository.js
+import mongoose from "mongoose";
 
-const createError = (message, statusCode) => {
-    const error = new Error(message);
-    error.statusCode = statusCode;
-    return error;
-};
+const getCollection = () =>
+    mongoose.connection.db.collection("user");
 
-export const getAllUsers = async (user) => {
-    if (!user?.id) {
-        throw createError(
-            "Authenticated user information is required",
-            401,
-        );
-    }
-
-    return findAllUsers();
-};
-
-export const updateUserStatusService = async ({
-    userId,
-    isBlocked,
-    requestingUser,
+export const findUsers = async ({
+    filter,
+    skip,
+    limit,
+    sort,
 }) => {
-    if (!requestingUser?.id) {
-        throw createError(
-            "Authenticated user information is required",
-            401,
-        );
-    }
+    return getCollection()
+        .find(
+            filter,
+            {
+                projection: {
+                    name: 1,
+                    email: 1,
+                    emailVerified: 1,
+                    role: 1,
+                    phoneNumber: 1,
+                    isBlocked: 1,
+                    status: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                },
+            },
+        )
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+};
 
-    const targetUser = await findUserById(userId);
+export const countUsers = async (
+    filter,
+) => {
+    return getCollection().countDocuments(
+        filter,
+    );
+};
 
-    if (!targetUser) {
-        throw createError("User not found", 404);
-    }
+export const findUserById = async (
+    userId,
+) => {
+    return getCollection().findOne({
+        _id: new mongoose.Types.ObjectId(
+            userId,
+        ),
+    });
+};
 
-    if (targetUser.role === "admin") {
-        throw createError(
-            "Admins cannot be blocked or unblocked",
-            403,
-        );
-    }
+export const updateUserStatus = async (
+    userId,
+    updateData,
+) => {
+    await getCollection().updateOne(
+        {
+            _id: new mongoose.Types.ObjectId(
+                userId,
+            ),
+        },
+        {
+            $set: {
+                ...updateData,
+                updatedAt: new Date(),
+            },
+        },
+    );
 
-    if (String(targetUser._id) === String(requestingUser.id)) {
-        throw createError(
-            "You cannot change your own status",
-            403,
-        );
-    }
+    return findUserById(userId);
+};
 
-    return updateUserBlockedStatus(userId, isBlocked);
+export const updateUserRole = async (
+    userId,
+    role,
+) => {
+    await getCollection().updateOne(
+        {
+            _id: new mongoose.Types.ObjectId(
+                userId,
+            ),
+        },
+        {
+            $set: {
+                role,
+                updatedAt: new Date(),
+            },
+        },
+    );
+
+    return findUserById(userId);
 };

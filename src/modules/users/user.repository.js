@@ -1,59 +1,94 @@
+// src/modules/users/user.repository.js
 import mongoose from "mongoose";
 
-export const findAllUsers = async () => {
-    return mongoose.connection.db
-        .collection("user")
+const getCollection = () =>
+    mongoose.connection.db.collection("user");
+
+export const findUsers = async ({
+    filter,
+    skip,
+    limit,
+    sort,
+}) => {
+    return getCollection()
         .find(
-            {
-                role: { $ne: "admin" },
-            },
+            filter,
             {
                 projection: {
                     name: 1,
                     email: 1,
+                    emailVerified: 1,
                     role: 1,
                     phoneNumber: 1,
                     isBlocked: 1,
+                    status: 1,
                     createdAt: 1,
+                    updatedAt: 1,
                 },
             },
         )
-        .sort({ createdAt: -1 })
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
         .toArray();
 };
 
-export const findUserById = async (userId) => {
-    return mongoose.connection.db
-        .collection("user")
-        .findOne({
-            _id: new mongoose.Types.ObjectId(userId),
-        });
+export const countUsers = async (
+    filter,
+) => {
+    return getCollection().countDocuments(
+        filter,
+    );
 };
 
-export const updateUserBlockedStatus = async (
+export const findUserById = async (
     userId,
-    isBlocked,
 ) => {
-    await mongoose.connection.db
-        .collection("user")
-        .updateOne(
-            { _id: new mongoose.Types.ObjectId(userId) },
-            { $set: { isBlocked } },
-        );
+    return getCollection().findOne({
+        _id: new mongoose.Types.ObjectId(
+            userId,
+        ),
+    });
+};
 
-    return mongoose.connection.db
-        .collection("user")
-        .findOne(
-            { _id: new mongoose.Types.ObjectId(userId) },
-            {
-                projection: {
-                    name: 1,
-                    email: 1,
-                    role: 1,
-                    phoneNumber: 1,
-                    isBlocked: 1,
-                    createdAt: 1,
-                },
+export const updateUserStatus = async (
+    userId,
+    updateData,
+) => {
+    await getCollection().updateOne(
+        {
+            _id: new mongoose.Types.ObjectId(
+                userId,
+            ),
+        },
+        {
+            $set: {
+                ...updateData,
+                updatedAt: new Date(),
             },
-        );
+        },
+    );
+
+    return findUserById(userId);
+};
+
+export const updateUserRole = async (
+    userId,
+    role,
+) => {
+    await getCollection().updateOne(
+        {
+            _id: new mongoose.Types.ObjectId(
+                userId,
+            ),
+        },
+        {
+            $set: {
+                role,
+                updatedAt: new Date(),
+            },
+        },
+    );
+
+    return findUserById(userId);
 };

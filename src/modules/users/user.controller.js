@@ -1,39 +1,126 @@
-import { getAllUsers, updateUserStatusService } from "./user.service.js";
-import { userIdSchema, updateUserStatusSchema } from "./user.validation.js";
+// src/modules/users/user.controller.js
+import {
+    getAllUsers,
+    updateUserRoleService,
+    updateUserStatusService,
+} from "./user.service.js";
 
-export const getUsers = async (req, res, next) => {
+import {
+    userIdSchema,
+    userQuerySchema,
+    updateUserRoleSchema,
+    updateUserStatusSchema,
+} from "./user.validation.js";
+
+//get users
+export const getUsers = async (
+    req,
+    res,
+    next,
+) => {
     try {
-        const users = await getAllUsers(req.user);
+        const query =
+            userQuerySchema.parse(
+                req.query,
+            );
+
+        const result =
+            await getAllUsers(
+                query,
+                req.user,
+            );
 
         return res.status(200).json({
             success: true,
-            message: "Users fetched successfully",
-            data: users,
+            message:
+                "Users fetched successfully",
+            data: result.users,
+            pagination:
+                result.pagination,
         });
     } catch (error) {
         next(error);
     }
 };
 
-export const updateUserStatus = async (req, res, next) => {
-    try {
-        const { userId } = userIdSchema.parse(req.params);
-        const { isBlocked } = updateUserStatusSchema.parse(req.body);
+//update user status
+export const updateUserStatus =
+    async (
+        req,
+        res,
+        next,
+    ) => {
+        try {
+            const { userId } =
+                userIdSchema.parse(
+                    req.params,
+                );
 
-        const user = await updateUserStatusService({
-            userId,
-            isBlocked,
-            requestingUser: req.user,
-        });
+            const data =
+                updateUserStatusSchema.parse(
+                    req.body,
+                );
 
-        return res.status(200).json({
-            success: true,
-            message: isBlocked
-                ? "User suspended successfully"
-                : "User unsuspended successfully",
-            data: user,
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+            const user =
+                await updateUserStatusService(
+                    {
+                        userId,
+                        ...data,
+                        requestingUser:
+                            req.user,
+                    },
+                );
+
+            return res
+                .status(200)
+                .json({
+                    success: true,
+                    message:
+                        "User status updated successfully",
+                    data: user,
+                });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+//update user role
+export const updateUserRole =
+    async (
+        req,
+        res,
+        next,
+    ) => {
+        try {
+            const { userId } =
+                userIdSchema.parse(
+                    req.params,
+                );
+
+            const { role } =
+                updateUserRoleSchema.parse(
+                    req.body,
+                );
+
+            const user =
+                await updateUserRoleService(
+                    {
+                        userId,
+                        role,
+                        requestingUser:
+                            req.user,
+                    },
+                );
+
+            return res
+                .status(200)
+                .json({
+                    success: true,
+                    message:
+                        "User role updated successfully",
+                    data: user,
+                });
+        } catch (error) {
+            next(error);
+        }
+    };

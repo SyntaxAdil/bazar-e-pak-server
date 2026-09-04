@@ -1,21 +1,38 @@
-const checkRoleMiddleware = (roles) => (req, res, next) => {
-  if (!req.user) {
-    const error = new Error("Unauthorized");
-    error.statusCode = 401;
+// src/middlewares/role-middleware.js
+const checkRoleMiddleware = (roles) => (
+    req,
+    res,
+    next,
+) => {
+    if (!req.user) {
+        const error = new Error(
+            "Unauthorized",
+        );
 
-    return next(error);
-  }
+        error.statusCode = 401;
 
-  const allowedRoles = Array.isArray(roles) ? roles : [roles];
+        return next(error);
+    }
 
-  if (!allowedRoles.includes(req.user.role)) {
-    const error = new Error("Forbidden - Insufficient permissions");
-    error.statusCode = 403;
+    const allowedRoles = Array.isArray(roles)
+        ? roles
+        : [roles];
 
-    return next(error);
-  }
+    if (
+        !allowedRoles.includes(
+            req.user.role,
+        )
+    ) {
+        const error = new Error(
+            "Forbidden - Insufficient permissions",
+        );
 
-  next();
+        error.statusCode = 403;
+
+        return next(error);
+    }
+
+    next();
 };
 
 export default checkRoleMiddleware;
