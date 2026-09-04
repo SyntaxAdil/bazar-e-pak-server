@@ -1,3 +1,4 @@
+// src/modules/cart/cart.service.js
 import mongoose from "mongoose";
 
 import {
@@ -12,187 +13,130 @@ import { CART_MESSAGES } from "./cart.constants.js";
 
 import Product from "../products/product.model.js";
 
-const getOrCreateCart = async (userId) => {
-    let cart = await findCartByUserIdRaw(userId);
+const createError = (
+    message,
+    statusCode = 400,
+) => {
+    const error = new Error(
+        message,
+    );
 
-    if (!cart) {
-        cart = await createCart(userId);
-    }
+    error.statusCode =
+        statusCode;
 
-    return cart;
+    return error;
 };
 
-// Validate product
-const validateProduct = async (productId) => {
-    if (
-        !mongoose.Types.ObjectId.isValid(productId)
-    ) {
-        throw new Error(
-            CART_MESSAGES.PRODUCT_NOT_FOUND
-        );
-    }
-
-    const product =
-        await Product.findById(productId);
-
-    if (!product) {
-        throw new Error(
-            CART_MESSAGES.PRODUCT_NOT_FOUND
-        );
-    }
-
-    if (
-        product.status &&
-        product.status !== "active"
-    ) {
-        throw new Error(
-            CART_MESSAGES.PRODUCT_UNAVAILABLE
-        );
-    }
-
-    if (!product.shopId) {
-        throw new Error(
-            "Product shop information is missing"
-        );
-    }
-
-    return product;
-};
-
-// Get cart
-export const getCartService = async (
-    userId
+const getOrCreateCart = async (
+    userId,
 ) => {
     let cart =
-        await findCartByUserId(userId);
+        await findCartByUserIdRaw(
+            userId,
+        );
 
     if (!cart) {
-        await createCart(userId);
-
         cart =
-            await findCartByUserId(userId);
+            await createCart(
+                userId,
+            );
     }
 
     return cart;
 };
 
-// Add item
-export const addToCartService = async (
-    userId,
-    productId,
-    quantity
-) => {
-    const product =
-        await validateProduct(productId);
+//validate product
+const validateProduct =
+    async (productId) => {
+        if (
+            !mongoose.Types.ObjectId.isValid(
+                productId,
+            )
+        ) {
+            throw createError(
+                CART_MESSAGES.PRODUCT_NOT_FOUND,
+                404,
+            );
+        }
 
-    if (
-        !Number.isInteger(quantity) ||
-        quantity < 1
-    ) {
-        throw new Error(
-            "Quantity must be at least 1"
-        );
-    }
+        const product =
+            await Product.findOne({
+                _id: productId,
+                isDeleted: false,
+            });
 
-    if (product.stock < quantity) {
-        throw new Error(
-            CART_MESSAGES.INSUFFICIENT_STOCK
-        );
-    }
+        if (!product) {
+            throw createError(
+                CART_MESSAGES.PRODUCT_NOT_FOUND,
+                404,
+            );
+        }
 
-    const cart =
-        await getOrCreateCart(userId);
+        if (
+            product.status !==
+            "active"
+        ) {
+            throw createError(
+                CART_MESSAGES.PRODUCT_UNAVAILABLE,
+                400,
+            );
+        }
 
-    const existingItem =
-        cart.items.find(
-            (item) =>
-                item.product.toString() ===
-                productId
-        );
+        if (!product.shopId) {
+            throw createError(
+                "Product shop information is missing",
+                400,
+            );
+        }
 
-    const currentQuantity =
-        existingItem
-            ? existingItem.quantity
-            : 0;
+        return product;
+    };
 
-    const newQuantity =
-        currentQuantity + quantity;
+//get cart
+export const getCartService =
+    async (
+        userId,
+    ) => {
+        let cart =
+            await findCartByUserId(
+                userId,
+            );
 
-    if (
-        product.stock <
-        newQuantity
-    ) {
-        throw new Error(
-            CART_MESSAGES.INSUFFICIENT_STOCK
-        );
-    }
+        if (!cart) {
+            await createCart(
+                userId,
+            );
 
-    const price =
-        product.discountPrice ??
-        product.price;
+            cart =
+                await findCartByUserId(
+                    userId,
+                );
+        }
 
-    if (existingItem) {
-        existingItem.quantity =
-            newQuantity;
+        return cart;
+    };
 
-        existingItem.shop =
-            product.shopId;
-
-        existingItem.price =
-            price;
-
-        existingItem.productName =
-            product.name;
-
-        existingItem.productImage =
-            product.images?.[0] ??
-            null;
-    } else {
-        cart.items.push({
-            product:
-                product._id,
-
-            shop:
-                product.shopId,
-
-            quantity,
-
-            price,
-
-            productName:
-                product.name,
-
-            productImage:
-                product.images?.[0] ??
-                null,
-        });
-    }
-
-    await saveCart(cart);
-
-    return getCartService(userId);
-};
-
-// Update item
-export const updateCartItemService =
+//add item
+export const addToCartService =
     async (
         userId,
         productId,
-        quantity
+        quantity,
     ) => {
         const product =
             await validateProduct(
-                productId
+                productId,
             );
 
         if (
             !Number.isInteger(
-                quantity
+                quantity,
             ) ||
             quantity < 1
         ) {
-            throw new Error(
-                "Quantity must be at least 1"
+            throw createError(
+                "Quantity must be at least 1",
+                400,
             );
         }
 
@@ -200,26 +144,139 @@ export const updateCartItemService =
             product.stock <
             quantity
         ) {
-            throw new Error(
-                CART_MESSAGES.INSUFFICIENT_STOCK
+            throw createError(
+                CART_MESSAGES.INSUFFICIENT_STOCK,
+                409,
             );
         }
 
         const cart =
             await getOrCreateCart(
-                userId
+                userId,
+            );
+
+        const existingItem =
+            cart.items.find(
+                (item) =>
+                    item.product.toString() ===
+                    String(
+                        productId,
+                    ),
+            );
+
+        const currentQuantity =
+            existingItem
+                ? existingItem.quantity
+                : 0;
+
+        const newQuantity =
+            currentQuantity +
+            quantity;
+
+        if (
+            product.stock <
+            newQuantity
+        ) {
+            throw createError(
+                CART_MESSAGES.INSUFFICIENT_STOCK,
+                409,
+            );
+        }
+
+        const price =
+            product.price *
+            (1 -
+                (product.discount ||
+                    0) /
+                    100);
+
+        if (existingItem) {
+            existingItem.quantity =
+                newQuantity;
+            existingItem.shop =
+                product.shopId;
+            existingItem.price =
+                price;
+            existingItem.productName =
+                product.name;
+            existingItem.productImage =
+                product.images?.[0] ||
+                null;
+        } else {
+            cart.items.push({
+                product:
+                    product._id,
+                shop:
+                    product.shopId,
+                quantity,
+                price,
+                productName:
+                    product.name,
+                productImage:
+                    product.images?.[0] ||
+                    null,
+            });
+        }
+
+        await saveCart(cart);
+
+        return getCartService(
+            userId,
+        );
+    };
+
+//update item
+export const updateCartItemService =
+    async (
+        userId,
+        productId,
+        quantity,
+    ) => {
+        const product =
+            await validateProduct(
+                productId,
+            );
+
+        if (
+            !Number.isInteger(
+                quantity,
+            ) ||
+            quantity < 1
+        ) {
+            throw createError(
+                "Quantity must be at least 1",
+                400,
+            );
+        }
+
+        if (
+            product.stock <
+            quantity
+        ) {
+            throw createError(
+                CART_MESSAGES.INSUFFICIENT_STOCK,
+                409,
+            );
+        }
+
+        const cart =
+            await getOrCreateCart(
+                userId,
             );
 
         const item =
             cart.items.find(
                 (cartItem) =>
                     cartItem.product.toString() ===
-                    productId
+                    String(
+                        productId,
+                    ),
             );
 
         if (!item) {
-            throw new Error(
-                CART_MESSAGES.ITEM_NOT_FOUND
+            throw createError(
+                CART_MESSAGES.ITEM_NOT_FOUND,
+                404,
             );
         }
 
@@ -230,52 +287,61 @@ export const updateCartItemService =
             product.shopId;
 
         item.price =
-            product.discountPrice ??
-            product.price;
+            product.price *
+            (1 -
+                (product.discount ||
+                    0) /
+                    100);
 
         item.productName =
             product.name;
 
         item.productImage =
-            product.images?.[0] ??
+            product.images?.[0] ||
             null;
 
         await saveCart(cart);
 
-        return getCartService(userId);
+        return getCartService(
+            userId,
+        );
     };
 
-// Remove item
+//remove item
 export const removeCartItemService =
     async (
         userId,
-        productId
+        productId,
     ) => {
         if (
             !mongoose.Types.ObjectId.isValid(
-                productId
+                productId,
             )
         ) {
-            throw new Error(
-                CART_MESSAGES.ITEM_NOT_FOUND
+            throw createError(
+                CART_MESSAGES.ITEM_NOT_FOUND,
+                404,
             );
         }
 
         const cart =
             await getOrCreateCart(
-                userId
+                userId,
             );
 
         const itemExists =
             cart.items.some(
                 (item) =>
                     item.product.toString() ===
-                    productId
+                    String(
+                        productId,
+                    ),
             );
 
         if (!itemExists) {
-            throw new Error(
-                CART_MESSAGES.ITEM_NOT_FOUND
+            throw createError(
+                CART_MESSAGES.ITEM_NOT_FOUND,
+                404,
             );
         }
 
@@ -283,18 +349,28 @@ export const removeCartItemService =
             cart.items.filter(
                 (item) =>
                     item.product.toString() !==
-                    productId
+                    String(
+                        productId,
+                    ),
             );
 
         await saveCart(cart);
 
-        return getCartService(userId);
+        return getCartService(
+            userId,
+        );
     };
 
-// Clear cart
+//clear cart
 export const clearCartService =
-    async (userId) => {
-        await deleteCart(userId);
+    async (
+        userId,
+    ) => {
+        await deleteCart(
+            userId,
+        );
 
-        return getCartService(userId);
+        return getCartService(
+            userId,
+        );
     };

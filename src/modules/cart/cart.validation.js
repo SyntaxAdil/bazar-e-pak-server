@@ -1,25 +1,48 @@
+// src/modules/cart/cart.validation.js
 import { z } from "zod";
 
-export const addToCartValidation = z.object({
-  productId: z
+const objectIdSchema = z
     .string()
-    .min(1, "Product ID is required"),
+    .regex(
+        /^[0-9a-fA-F]{24}$/,
+        "Invalid product ID",
+    );
 
-  quantity: z
-    .number()
-    .int()
-    .min(1, "Quantity must be at least 1"),
-});
+export const addToCartValidation =
+    z.object({
+        productId:
+            objectIdSchema,
 
-export const updateCartItemValidation = z.object({
-  quantity: z
-    .number()
-    .int()
-    .min(1, "Quantity must be at least 1"),
-});
+        quantity: z
+            .number()
+            .int()
+            .min(
+                1,
+                "Quantity must be at least 1",
+            )
+            .max(
+                1000,
+                "Quantity cannot exceed 1000",
+            ),
+    });
 
-export const cartItemParamValidation = z.object({
-  productId: z
-    .string()
-    .min(1, "Product ID is required"),
-});
+export const updateCartItemValidation =
+    z.object({
+        quantity: z
+            .number()
+            .int()
+            .min(
+                1,
+                "Quantity must be at least 1",
+            )
+            .max(
+                1000,
+                "Quantity cannot exceed 1000",
+            ),
+    });
+
+export const cartItemParamValidation =
+    z.object({
+        productId:
+            objectIdSchema,
+    });
