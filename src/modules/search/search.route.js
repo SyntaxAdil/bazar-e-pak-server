@@ -1,1 +1,84 @@
-import { Router } from "express"; import Product from "../products/product.model.js"; import Shop from "../shops/shop.model.js"; import { safeTrack } from "../../utils/analytics.js"; const r = Router(); r.get("/", async (req, res, next) => { try { const q = String(req.query.q || req.query.search || "").trim(); if (!q) { res.json({ success: true, data: { products: [], shops: [], total: 0 } }); return; } const limit = Math.min(50, Math.max(1, Number(req.query.limit || 10))); const [products, shops] = await Promise.all([Product.find({ $text: { $search: q }, isDeleted: false, status: "active" }).sort({ score: { $meta: "textScore" } }).limit(limit).lean(), Shop.find({ $text: { $search: q }, isDeleted: false, status: "active" }).sort({ score: { $meta: "textScore" } }).limit(limit).lean()]); safeTrack({ eventType: "SEARCH", searchKeyword: q, resultCount: products.length + shops.length, source: req.query.source || "global_search", page: req.query.page || null }); res.json({ success: true, data: { products, shops, total: products.length + shops.length } }); } catch (e) { next(e); } }); r.get("/suggestions", async (req, res, next) => { try { const q = String(req.query.q || "").trim(); if (q.length < 2) { res.json({ success: true, data: [] }); return; } const [products, shops] = await Promise.all([Product.find({ name: { $regex: q, $options: "i" }, isDeleted: false, status: "active" }).select("name _id").limit(5).lean(), Shop.find({ name: { $regex: q, $options: "i" }, isDeleted: false, status: "active" }).select("name _id slug").limit(5).lean()]); res.json({ success: true, data: [...products.map(x => ({ type: "product", id: x._id, name: x.name })), ...shops.map(x => ({ type: "shop", id: x._id, name: x.name, slug: x.slug }))] }); } catch (e) { next(e); } }); export default r;
+import { Router } from "express";
+import Product from "../products/product.model.js";
+import Shop from "../shops/shop.model.js";
+import { safeTrack } from "../../utils/analytics.js";
+const r = Router();
+r.get("/", async (req, res, next) => {
+  try {
+    const q = String(req.query.q || req.query.search || "").trim();
+    if (!q) {
+      res.json({ success: true, data: { products: [], shops: [], total: 0 } });
+      return;
+    }
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit || 10)));
+    const [products, shops] = await Promise.all([
+      Product.find({
+        $text: { $search: q },
+        isDeleted: false,
+        status: "active",
+      })
+        .sort({ score: { $meta: "textScore" } })
+        .limit(limit)
+        .lean(),
+      Shop.find({ $text: { $search: q }, isDeleted: false, status: "active" })
+        .sort({ score: { $meta: "textScore" } })
+        .limit(limit)
+        .lean(),
+    ]);
+    safeTrack({
+      eventType: "SEARCH",
+      searchKeyword: q,
+      resultCount: products.length + shops.length,
+      source: req.query.source || "global_search",
+      page: req.query.page || null,
+    });
+    res.json({
+      success: true,
+      data: { products, shops, total: products.length + shops.length },
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+r.get("/suggestions", async (req, res, next) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    if (q.length < 2) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+    const [products, shops] = await Promise.all([
+      Product.find({
+        name: { $regex: q, $options: "i" },
+        isDeleted: false,
+        status: "active",
+      })
+        .select("name _id")
+        .limit(5)
+        .lean(),
+      Shop.find({
+        name: { $regex: q, $options: "i" },
+        isDeleted: false,
+        status: "active",
+      })
+        .select("name _id slug")
+        .limit(5)
+        .lean(),
+    ]);
+    res.json({
+      success: true,
+      data: [
+        ...products.map((x) => ({ type: "product", id: x._id, name: x.name })),
+        ...shops.map((x) => ({
+          type: "shop",
+          id: x._id,
+          name: x.name,
+          slug: x.slug,
+        })),
+      ],
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+export default r;

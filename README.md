@@ -1,10 +1,5 @@
 # Bazar-e-Pak Server
 
-<<<<<<< HEAD
-Backend APIIIIIIIII for the Bazar-e-Pak e-commerce platform.
-=======
-Backend API for the Bazar-e-Pak e-commerce platformmmm.
->>>>>>> 1dbe34ae2c08941e9af85b89a8a556d136a04a02
 
 ## Tech Stack
 
