@@ -25,58 +25,31 @@ import nativeShopRoutes from "../modules/shops/native-shop.route.js";
 const router = express.Router();
 
 //products
-router.use(
-    "/products",
-    productRoutes,
-);
+router.use("/products", productRoutes);
 
 //shops
-router.use(
-    "/shops",
-    shopRoutes,
-);
+router.use("/shops", shopRoutes);
 
 //categories
-router.use(
-    "/categories",
-    categoryRoutes,
-);
+router.use("/categories", categoryRoutes);
 
 //reviews
-router.use(
-    "/reviews",
-    reviewRoutes,
-);
+router.use("/reviews", reviewRoutes);
 
 //cart
-router.use(
-    "/cart",
-    cartRoutes,
-);
+router.use("/cart", cartRoutes);
 
 //users
-router.use(
-    "/users",
-    userRoutes,
-);
+router.use("/users", userRoutes);
 
 //analytics
-router.use(
-    "/analytics",
-    analyticsRoutes,
-);
+router.use("/analytics", analyticsRoutes);
 
 //seller applications
-router.use(
-    "/seller-applications",
-    sellerApplicationRoutes,
-);
+router.use("/seller-applications", sellerApplicationRoutes);
 
 //audit logs
-router.use(
-    "/audit-logs",
-    auditRoutes,
-);
+router.use("/audit-logs", auditRoutes);
 router.use("/native-products", nativeProductRoutes);
 router.use("/campaigns", campaignRoutes);
 router.use("/cms", cmsRoutes);
