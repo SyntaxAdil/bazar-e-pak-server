@@ -82,7 +82,7 @@ r.patch(
       const d = await TeamMember.findByIdAndUpdate(
         req.params.id,
         { $set: req.body },
-        { new: true, runValidators: true },
+        { returnDocument: "after", runValidators: true },
       ).lean();
       await safeAudit({
         actor: req.user,

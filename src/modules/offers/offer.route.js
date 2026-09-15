@@ -122,7 +122,7 @@ r.patch(
       const d = await ProductOffer.findByIdAndUpdate(
         req.params.id,
         { $set: { ...req.body, updatedBy: String(req.user.id) } },
-        { new: true, runValidators: true },
+        { returnDocument: "after", runValidators: true },
       ).lean();
       await safeAudit({
         actor: req.user,

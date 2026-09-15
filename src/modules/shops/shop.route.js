@@ -63,7 +63,12 @@ router.post("/:shopId/track", async (req, res, next) => {
 router.get("/:shopId", getShopById);
 
 //create shop
-router.post("/", authMiddleware, checkRoleMiddleware("seller"), createShop);
+router.post(
+  "/",
+  authMiddleware,
+  checkRoleMiddleware(["seller", "super_admin"]),
+  createShop,
+);
 
 //update shop
 router.patch(

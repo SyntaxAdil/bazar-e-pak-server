@@ -18,29 +18,58 @@ const authMiddleware = async (req, res, next) => {
     const payload = await validateToken(token);
 
     const userId = payload.id || payload.sub;
-    let currentUser = null;
-    if (userId) {
-      currentUser = await User.findById(userId)
-        .lean()
-        .catch(() => null);
+    if (!userId) {
+      incrementMetric("authenticationFailures");
+
+      const error = new Error(
+        "Unauthorized - Invalid user",
+      );
+
+      error.statusCode = 401;
+
+      return next(error);
     }
-    if (currentUser) {
-      if (currentUser.isBlocked || currentUser.status !== "active") {
-        const e = new Error("Account is not active");
-        e.statusCode = 403;
-        return next(e);
-      }
-      req.user = {
-        ...payload,
-        id: String(currentUser._id),
-        role: currentUser.role,
-        permissions: currentUser.permissions || [],
-        name: currentUser.name,
-        email: currentUser.email,
-      };
-    } else {
-      req.user = payload;
+
+    const currentUser = await User.findById(
+      userId,
+    )
+      .lean()
+      .catch(() => null);
+
+    if (!currentUser) {
+      incrementMetric("authenticationFailures");
+
+      const error = new Error(
+        "Unauthorized - User not found",
+      );
+
+      error.statusCode = 401;
+
+      return next(error);
     }
+
+    if (
+      currentUser.isBlocked ||
+      currentUser.status !== "active"
+    ) {
+      const error = new Error(
+        "Account is not active",
+      );
+
+      error.statusCode = 403;
+
+      return next(error);
+    }
+
+    req.user = {
+      ...payload,
+      id: String(currentUser._id),
+      role: currentUser.role,
+      permissions:
+        currentUser.permissions || [],
+      name: currentUser.name,
+      email: currentUser.email,
+    };
 
     next();
   } catch (error) {

@@ -28,6 +28,35 @@ r.get("/", async (req, res, next) => {
     next(e);
   }
 });
+
+r.get(
+  "/:id",
+  authMiddleware,
+  checkRoleMiddleware("super_admin"),
+  async (req, res, next) => {
+    try {
+      const shop = await Shop.findOne({
+        _id: req.params.id,
+        source: "pakbazaar",
+        isDeleted: false,
+      }).lean();
+
+      if (!shop) {
+        throw err(
+          "Native shop not found",
+          404,
+        );
+      }
+
+      res.status(200).json({
+        success: true,
+        data: shop,
+      });
+    } catch (e) {
+      next(e);
+    }
+  },
+);
 r.post(
   "/",
   authMiddleware,
@@ -74,7 +103,7 @@ r.patch(
       const updated = await Shop.findByIdAndUpdate(
         req.params.id,
         { $set: d },
-        { new: true, runValidators: true },
+        { returnDocument: "after", runValidators: true },
       ).lean();
       await safeAudit({
         actor: req.user,

@@ -18,11 +18,33 @@ import {
 } from "./shop.validation.js";
 
 export const createShop = async (req, res) => {
-  const data = createShopSchema.parse(req.body);
+  const { sellerId, ...shopBody } = req.body;
+
+  const data = createShopSchema.parse(shopBody);
+
+  let shopOwnerId;
+
+  if (req.user.role === "super_admin") {
+    if (!sellerId) {
+      const error = new Error(
+        "Seller ID is required when Super Admin creates a shop",
+      );
+
+      error.statusCode = 400;
+
+      throw error;
+    }
+
+    shopOwnerId = sellerId;
+  } else {
+    shopOwnerId = req.user.id;
+  }
 
   const shop = await createShopService({
-    sellerId: req.user.id,
+    sellerId: shopOwnerId,
     shopData: data,
+    actorId: req.user.id,
+    actorRole: req.user.role,
   });
 
   return res.status(201).json({

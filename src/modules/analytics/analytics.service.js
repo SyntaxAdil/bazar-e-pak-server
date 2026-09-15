@@ -6,6 +6,7 @@ import Product from "../products/product.model.js";
 import Shop from "../shops/shop.model.js";
 import User from "../users/user.model.js";
 import Review from "../reviews/review.model.js";
+import AnalyticsEvent from "./analytics.model.js";
 const err = (m, c = 400) => Object.assign(new Error(m), { statusCode: c });
 export const trackAnalyticsEvent = async (data, user) => {
   const event = { ...data, userId: user?.id ? String(user.id) : null };

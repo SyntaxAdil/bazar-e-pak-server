@@ -71,7 +71,7 @@ export const updateNativeProduct = async (id, data, user) => {
   const updated = await Product.findByIdAndUpdate(
     id,
     { $set: data },
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   ).lean();
   await safeAudit({
     actor: user,

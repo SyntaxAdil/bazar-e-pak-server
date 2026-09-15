@@ -8,7 +8,19 @@ import {
   listNativeProducts,
 } from "./native-product.js";
 const r = Router();
-r.get("/", listNativeProducts);
+r.get("/", async (req, res, next) => {
+  try {
+    const result = await listNativeProducts(req.query);
+
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 r.post(
   "/",
   authMiddleware,

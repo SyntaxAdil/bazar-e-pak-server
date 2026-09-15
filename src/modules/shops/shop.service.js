@@ -46,7 +46,12 @@ const generateUniqueSlug = async (name) => {
 };
 
 //create shop
-export const createShopService = async ({ sellerId, shopData }) => {
+export const createShopService = async ({
+  sellerId,
+  shopData,
+  actorId,
+  actorRole,
+}) => {
   if (!mongoose.isValidObjectId(sellerId)) {
     throw createServiceError("Invalid seller ID", 400);
   }
@@ -54,7 +59,10 @@ export const createShopService = async ({ sellerId, shopData }) => {
   const existingShop = await findShopBySellerId(sellerId);
 
   if (existingShop) {
-    throw createServiceError("You already have a shop", 409);
+    throw createServiceError(
+      "This seller already has a shop",
+      409,
+    );
   }
 
   const slug = await generateUniqueSlug(shopData.name);
@@ -63,15 +71,23 @@ export const createShopService = async ({ sellerId, shopData }) => {
     const created = await createShop({
       ...shopData,
       sellerId,
-      status: "pending",
+      slug,
+      status:
+        actorRole === "super_admin"
+          ? "active"
+          : "pending",
     });
     await safeAudit({
-      actor: { id: String(sellerId), role: "seller" },
+      actor: {
+        id: String(actorId || sellerId),
+        role: actorRole || "seller",
+      },
       action: "SHOP_CREATED",
       resourceType: "Shop",
       resourceId: created._id,
       newState: created,
     });
+
     return created;
   } catch (error) {
     if (error.code === 11000) {

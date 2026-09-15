@@ -1,4 +1,5 @@
 // src/modules/reviews/review.service.js
+
 import {
     createReview as createReviewRepository,
     deleteReviewById,
@@ -19,22 +20,29 @@ import {
     findShopById,
     updateShopReviewStats,
 } from "../shops/shop.repository.js";
-import { safeTrack } from "../../utils/analytics.js";
-import { safeAudit } from "../../utils/audit.js";
+
+import {
+    safeTrack,
+} from "../../utils/analytics.js";
+
+import {
+    safeAudit,
+} from "../../utils/audit.js";
+
 
 const createError = (
     message,
     statusCode,
 ) => {
-    const error = new Error(
-        message,
-    );
+    const error =
+        new Error(message);
 
     error.statusCode =
         statusCode;
 
     return error;
 };
+
 
 const updateProductRating =
     async (
@@ -57,27 +65,30 @@ const updateProductRating =
         );
     };
 
-const updateShopRating = async (
-    shopId,
-) => {
-    const {
-        rating,
-        totalReviews,
-    } =
-        await getShopReviewStats(
-            shopId,
-        );
 
-    await updateShopReviewStats(
+const updateShopRating =
+    async (
         shopId,
-        {
+    ) => {
+        const {
             rating,
             totalReviews,
-        },
-    );
-};
+        } =
+            await getShopReviewStats(
+                shopId,
+            );
 
-//create review
+        await updateShopReviewStats(
+            shopId,
+            {
+                rating,
+                totalReviews,
+            },
+        );
+    };
+
+
+// create review
 export const createReviewData =
     async (
         reviewData,
@@ -104,6 +115,8 @@ export const createReviewData =
             );
         }
 
+
+        // Product review validation
         if (
             reviewData.reviewType ===
             "product"
@@ -125,16 +138,22 @@ export const createReviewData =
                     filter: {
                         reviewType:
                             "product",
+
                         productId:
                             reviewData.productId,
-                        userId: String(
-                            userId,
-                        ),
+
+                        userId:
+                            String(
+                                userId,
+                            ),
                     },
+
                     limit: 1,
                 });
 
-            if (existing.length) {
+            if (
+                existing.length
+            ) {
                 throw createError(
                     "You have already reviewed this product",
                     409,
@@ -142,6 +161,8 @@ export const createReviewData =
             }
         }
 
+
+        // Shop review validation
         if (
             reviewData.reviewType ===
             "shop"
@@ -163,16 +184,22 @@ export const createReviewData =
                     filter: {
                         reviewType:
                             "shop",
+
                         shopId:
                             reviewData.shopId,
-                        userId: String(
-                            userId,
-                        ),
+
+                        userId:
+                            String(
+                                userId,
+                            ),
                     },
+
                     limit: 1,
                 });
 
-            if (existing.length) {
+            if (
+                existing.length
+            ) {
                 throw createError(
                     "You have already reviewed this shop",
                     409,
@@ -180,30 +207,36 @@ export const createReviewData =
             }
         }
 
+
         try {
             const review =
                 await createReviewRepository(
                     {
                         ...reviewData,
+
                         productId:
                             reviewData.reviewType ===
-                            "product"
+                                "product"
                                 ? reviewData.productId
                                 : null,
+
                         shopId:
                             reviewData.reviewType ===
-                            "shop"
+                                "shop"
                                 ? reviewData.shopId
                                 : null,
+
                         userId:
                             String(
                                 userId,
                             ),
+
                         userName:
                             user?.name ||
                             "Customer",
                     },
                 );
+
 
             if (
                 review.reviewType ===
@@ -214,6 +247,7 @@ export const createReviewData =
                 );
             }
 
+
             if (
                 review.reviewType ===
                 "shop"
@@ -223,7 +257,31 @@ export const createReviewData =
                 );
             }
 
-            safeTrack({eventType:"REVIEW_CREATED",productId:review.productId||undefined,shopId:review.shopId||undefined,metadata:{reviewId:String(review._id)}},user);
+
+            safeTrack(
+                {
+                    eventType:
+                        "REVIEW_CREATED",
+
+                    productId:
+                        review.productId ||
+                        undefined,
+
+                    shopId:
+                        review.shopId ||
+                        undefined,
+
+                    metadata: {
+                        reviewId:
+                            String(
+                                review._id,
+                            ),
+                    },
+                },
+                user,
+            );
+
+
             return review;
         } catch (error) {
             if (
@@ -240,12 +298,133 @@ export const createReviewData =
         }
     };
 
-//get reviews
+
+// PUBLIC REVIEWS
+// Anyone can see published reviews only
 export const getReviewsData =
+    async (
+        query,
+    ) => {
+        const {
+            reviewType,
+            productId,
+            shopId,
+            rating,
+            page,
+            limit,
+            sortOrder,
+        } = query;
+
+        const filter = {
+            status:
+                "published",
+        };
+
+
+        if (reviewType) {
+            filter.reviewType =
+                reviewType;
+        }
+
+
+        if (productId) {
+            filter.productId =
+                productId;
+        }
+
+
+        if (shopId) {
+            filter.shopId =
+                shopId;
+        }
+
+
+        if (rating) {
+            filter.rating =
+                rating;
+        }
+
+
+        const skip =
+            (page - 1) *
+            limit;
+
+
+        const sort = {
+            createdAt:
+                sortOrder ===
+                    "asc"
+                    ? 1
+                    : -1,
+        };
+
+
+        const [
+            reviews,
+            total,
+        ] =
+            await Promise.all([
+                findReviews({
+                    filter,
+                    skip,
+                    limit,
+                    sort,
+                }),
+
+                countReviews(
+                    filter,
+                ),
+            ]);
+
+
+        return {
+            reviews,
+
+            pagination: {
+                page,
+                limit,
+                total,
+
+                totalPages:
+                    Math.ceil(
+                        total /
+                        limit,
+                    ),
+            },
+        };
+    };
+
+
+// ADMIN / SUPER ADMIN DASHBOARD REVIEWS
+export const getManagedReviewsData =
     async (
         query,
         user,
     ) => {
+        const isSuperAdmin =
+            user?.role ===
+            "super_admin";
+
+
+        const canViewAsAdmin =
+            user?.role ===
+            "admin" &&
+            user.permissions?.includes(
+                "reviews.view",
+            );
+
+
+        if (
+            !isSuperAdmin &&
+            !canViewAsAdmin
+        ) {
+            throw createError(
+                "You are not allowed to view reviews",
+                403,
+            );
+        }
+
+
         const {
             reviewType,
             productId,
@@ -257,85 +436,91 @@ export const getReviewsData =
             sortOrder,
         } = query;
 
+
         const filter = {};
+
 
         if (reviewType) {
             filter.reviewType =
                 reviewType;
         }
 
+
         if (productId) {
             filter.productId =
                 productId;
         }
+
 
         if (shopId) {
             filter.shopId =
                 shopId;
         }
 
+
         if (rating) {
             filter.rating =
                 rating;
         }
 
-        if (
-            user?.role ===
-                "admin" ||
-            user?.role ===
-                "super_admin"
-        ) {
-            if (status) {
-                filter.status =
-                    status;
-            }
-        } else {
+
+        if (status) {
             filter.status =
-                "published";
+                status;
         }
+
 
         const skip =
             (page - 1) *
             limit;
 
+
         const sort = {
             createdAt:
                 sortOrder ===
-                "asc"
+                    "asc"
                     ? 1
                     : -1,
         };
 
+
         const [
             reviews,
             total,
-        ] = await Promise.all([
-            findReviews({
-                filter,
-                skip,
-                limit,
-                sort,
-            }),
+        ] =
+            await Promise.all([
+                findReviews({
+                    filter,
+                    skip,
+                    limit,
+                    sort,
+                }),
 
-            countReviews(filter),
-        ]);
+                countReviews(
+                    filter,
+                ),
+            ]);
+
 
         return {
             reviews,
+
             pagination: {
                 page,
                 limit,
                 total,
+
                 totalPages:
                     Math.ceil(
                         total /
-                            limit,
+                        limit,
                     ),
             },
         };
     };
 
-//get review
+
+// get single review
 export const getReviewByIdData =
     async (
         reviewId,
@@ -346,6 +531,7 @@ export const getReviewByIdData =
                 reviewId,
             );
 
+
         if (!review) {
             throw createError(
                 "Review not found",
@@ -353,9 +539,10 @@ export const getReviewByIdData =
             );
         }
 
+
         if (
             review.status !==
-                "published" &&
+            "published" &&
             ![
                 "admin",
                 "super_admin",
@@ -369,10 +556,12 @@ export const getReviewByIdData =
             );
         }
 
+
         return review;
     };
 
-//delete review
+
+// delete / remove review
 export const deleteReviewData =
     async (
         reviewId,
@@ -382,6 +571,7 @@ export const deleteReviewData =
             user?.id ||
             user?.sub;
 
+
         if (!userId) {
             throw createError(
                 "Authenticated user information is required",
@@ -389,10 +579,12 @@ export const deleteReviewData =
             );
         }
 
+
         const review =
             await findReviewById(
                 reviewId,
             );
+
 
         if (!review) {
             throw createError(
@@ -401,13 +593,27 @@ export const deleteReviewData =
             );
         }
 
+
         const isOwner =
             String(
                 review.userId,
             ) ===
-            String(userId);
+            String(
+                userId,
+            );
 
-        const canModerate = user.role === "super_admin" || (user.role === "admin" && user.permissions?.includes("reviews.moderate"));
+
+        const canModerate =
+            user.role ===
+            "super_admin" ||
+            (
+                user.role ===
+                "admin" &&
+                user.permissions?.includes(
+                    "reviews.moderate",
+                )
+            );
+
 
         if (
             !isOwner &&
@@ -419,9 +625,11 @@ export const deleteReviewData =
             );
         }
 
+
         await deleteReviewById(
             reviewId,
         );
+
 
         if (
             review.reviewType ===
@@ -432,6 +640,7 @@ export const deleteReviewData =
             );
         }
 
+
         if (
             review.reviewType ===
             "shop"
@@ -441,11 +650,35 @@ export const deleteReviewData =
             );
         }
 
-        await safeAudit({actor:user,action:"REVIEW_REMOVED",resourceType:"Review",resourceId:reviewId,previousState:review,newState:{status:"removed"}});
+
+        await safeAudit({
+            actor:
+                user,
+
+            action:
+                "REVIEW_REMOVED",
+
+            resourceType:
+                "Review",
+
+            resourceId:
+                reviewId,
+
+            previousState:
+                review,
+
+            newState: {
+                status:
+                    "removed",
+            },
+        });
+
+
         return true;
     };
 
-//moderate review
+
+// moderate review
 export const moderateReviewData =
     async (
         reviewId,
@@ -453,17 +686,31 @@ export const moderateReviewData =
         reason,
         user,
     ) => {
-        if (!(user?.role === "super_admin" || (user?.role === "admin" && user.permissions?.includes("reviews.moderate")))) {
+        const canModerate =
+            user?.role ===
+            "super_admin" ||
+            (
+                user?.role ===
+                "admin" &&
+                user.permissions?.includes(
+                    "reviews.moderate",
+                )
+            );
+
+
+        if (!canModerate) {
             throw createError(
                 "You are not allowed to moderate reviews",
                 403,
             );
         }
 
+
         const review =
             await findReviewById(
                 reviewId,
             );
+
 
         if (!review) {
             throw createError(
@@ -472,21 +719,26 @@ export const moderateReviewData =
             );
         }
 
+
         const updated =
             await updateReviewStatus(
                 reviewId,
                 {
                     status,
+
                     moderatedBy:
                         String(
                             user.id,
                         ),
+
                     moderatedAt:
                         new Date(),
+
                     moderationReason:
                         reason || "",
                 },
             );
+
 
         if (
             review.reviewType ===
@@ -497,6 +749,7 @@ export const moderateReviewData =
             );
         }
 
+
         if (
             review.reviewType ===
             "shop"
@@ -506,6 +759,30 @@ export const moderateReviewData =
             );
         }
 
-        await safeAudit({actor:user,action:"REVIEW_MODERATED",resourceType:"Review",resourceId:reviewId,previousState:review,newState:updated,reason:reason||""});
+
+        await safeAudit({
+            actor:
+                user,
+
+            action:
+                "REVIEW_MODERATED",
+
+            resourceType:
+                "Review",
+
+            resourceId:
+                reviewId,
+
+            previousState:
+                review,
+
+            newState:
+                updated,
+
+            reason:
+                reason || "",
+        });
+
+
         return updated;
     };

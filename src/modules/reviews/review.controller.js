@@ -11,6 +11,7 @@ import {
     deleteReviewData,
     getReviewByIdData,
     getReviewsData,
+    getManagedReviewsData,
     moderateReviewData,
 } from "./review.service.js";
 
@@ -77,6 +78,41 @@ export const getReviews = async (
         next(error);
     }
 };
+
+// get reviews for admin / super admin dashboard
+export const getManagedReviews =
+    async (
+        req,
+        res,
+        next,
+    ) => {
+        try {
+            const query =
+                reviewQuerySchema.parse(
+                    req.query,
+                );
+
+            const result =
+                await getManagedReviewsData(
+                    query,
+                    req.user,
+                );
+
+            return res
+                .status(200)
+                .json({
+                    success: true,
+                    message:
+                        "Reviews fetched successfully",
+                    data:
+                        result.reviews,
+                    pagination:
+                        result.pagination,
+                });
+        } catch (error) {
+            next(error);
+        }
+    };
 
 //get review
 export const getReviewById = async (

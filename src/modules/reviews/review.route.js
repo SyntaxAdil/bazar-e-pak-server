@@ -1,4 +1,5 @@
 // src/modules/reviews/review.route.js
+
 import { Router } from "express";
 
 import {
@@ -6,28 +7,44 @@ import {
     deleteReview,
     getReviewById,
     getReviews,
+    getManagedReviews,
     moderateReview,
 } from "./review.controller.js";
 
 import authMiddleware from "../../middlewares/auth.middleware.js";
-
 import checkRoleMiddleware from "../../middlewares/role-middleware.js";
 
 const router = Router();
 
-//get reviews
+
+// PUBLIC - get reviews
 router.get(
     "/",
     getReviews,
 );
 
-//get review
+
+// ADMIN / SUPER ADMIN - dashboard reviews
+// IMPORTANT: this MUST be before "/:id"
+router.get(
+    "/manage",
+    authMiddleware,
+    checkRoleMiddleware([
+        "admin",
+        "super_admin",
+    ]),
+    getManagedReviews,
+);
+
+
+// PUBLIC - get single review
 router.get(
     "/:id",
     getReviewById,
 );
 
-//create review
+
+// CUSTOMER - create review
 router.post(
     "/",
     authMiddleware,
@@ -37,7 +54,8 @@ router.post(
     createReview,
 );
 
-//delete review
+
+// CUSTOMER / ADMIN / SUPER ADMIN - remove review
 router.delete(
     "/:id",
     authMiddleware,
@@ -49,7 +67,8 @@ router.delete(
     deleteReview,
 );
 
-//moderate review
+
+// ADMIN / SUPER ADMIN - moderate review
 router.patch(
     "/:id/moderation",
     authMiddleware,
