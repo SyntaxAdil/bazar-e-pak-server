@@ -2,6 +2,7 @@ import {
   analyticsEventSchema,
   analyticsQuerySchema,
 } from "./analytics.validation.js";
+
 import {
   trackAnalyticsEvent,
   getAnalytics,
@@ -10,10 +11,13 @@ import {
   getShopAnalytics,
   getSellerAnalytics,
   getProductRankings,
+  getSearchAnalytics,
 } from "./analytics.service.js";
+
 export const trackEvent = async (req, res, next) => {
   try {
     const d = analyticsEventSchema.parse(req.body);
+
     res
       .status(201)
       .json({ success: true, data: await trackAnalyticsEvent(d, req.user) });
@@ -21,6 +25,7 @@ export const trackEvent = async (req, res, next) => {
     next(e);
   }
 };
+
 export const getAnalyticsController = async (req, res, next) => {
   try {
     res.json({
@@ -31,6 +36,7 @@ export const getAnalyticsController = async (req, res, next) => {
     next(e);
   }
 };
+
 export const dashboardAnalytics = async (req, res, next) => {
   try {
     res.json({
@@ -41,6 +47,7 @@ export const dashboardAnalytics = async (req, res, next) => {
     next(e);
   }
 };
+
 export const productAnalytics = async (req, res, next) => {
   try {
     res.json({
@@ -51,6 +58,7 @@ export const productAnalytics = async (req, res, next) => {
     next(e);
   }
 };
+
 export const shopAnalytics = async (req, res, next) => {
   try {
     res.json({
@@ -61,6 +69,7 @@ export const shopAnalytics = async (req, res, next) => {
     next(e);
   }
 };
+
 export const sellerAnalytics = async (req, res, next) => {
   try {
     res.json({
@@ -71,11 +80,23 @@ export const sellerAnalytics = async (req, res, next) => {
     next(e);
   }
 };
+
 export const productRankings = async (req, res, next) => {
   try {
     res.json({
       success: true,
       data: await getProductRankings(req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const searchAnalytics = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getSearchAnalytics(req.query, req.user),
     });
   } catch (e) {
     next(e);

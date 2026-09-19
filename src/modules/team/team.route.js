@@ -47,6 +47,32 @@ r.get(
     }
   },
 );
+
+r.get(
+  "/:id",
+  authMiddleware,
+  checkRoleMiddleware("super_admin"),
+  async (req, res, next) => {
+    try {
+      const data = await TeamMember.findById(req.params.id).lean();
+
+      if (!data) {
+        const e = new Error("Team member not found");
+        e.statusCode = 404;
+        throw e;
+      }
+
+      res.json({
+        success: true,
+        data,
+      });
+    } catch (e) {
+      next(e);
+    }
+  },
+);
+
+
 r.post(
   "/",
   authMiddleware,

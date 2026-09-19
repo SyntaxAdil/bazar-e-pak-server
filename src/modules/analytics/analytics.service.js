@@ -2,45 +2,62 @@ import {
   createAnalyticsEvent,
   aggregateAnalytics,
 } from "./analytics.repository.js";
+
 import Product from "../products/product.model.js";
 import Shop from "../shops/shop.model.js";
 import User from "../users/user.model.js";
 import Review from "../reviews/review.model.js";
 import AnalyticsEvent from "./analytics.model.js";
+
 const err = (m, c = 400) => Object.assign(new Error(m), { statusCode: c });
+
 export const trackAnalyticsEvent = async (data, user) => {
   const event = { ...data, userId: user?.id ? String(user.id) : null };
+
   if (data.productId) {
     const p = await Product.findOne({
       _id: data.productId,
       isDeleted: false,
     }).lean();
+
     if (!p) throw err("Product not found", 404);
+
     event.shopId = p.shopId || null;
     event.sellerId = p.sellerId || null;
     event.categoryId = p.categoryId || null;
   }
+
   if (data.shopId) {
     const s = await Shop.findOne({ _id: data.shopId, isDeleted: false }).lean();
+
     if (!s) throw err("Shop not found", 404);
+
     event.sellerId = String(s.sellerId);
   }
+
   return createAnalyticsEvent(event);
 };
+
 const dateMatch = (q) => {
   const m = {};
+
   if (q.startDate || q.endDate) {
     m.createdAt = {};
+
     if (q.startDate) m.createdAt.$gte = new Date(q.startDate);
     if (q.endDate) m.createdAt.$lte = new Date(q.endDate);
   }
+
   return m;
 };
+
 export const getAnalytics = async (query, user) => {
   const match = dateMatch(query);
+
   if (query.eventType) match.eventType = query.eventType;
   if (query.productId) match.productId = query.productId;
   if (query.shopId) match.shopId = query.shopId;
+
   if (user?.role === "seller") match.sellerId = String(user.id);
   else if (query.sellerId) {
     if (user?.role !== "super_admin")
@@ -48,8 +65,10 @@ export const getAnalytics = async (query, user) => {
         "Only the Super Admin can inspect another seller's analytics",
         403,
       );
+
     match.sellerId = String(query.sellerId);
   }
+
   const [summary, byEvent] = await Promise.all([
     aggregateAnalytics([
       { $match: match },
@@ -61,29 +80,38 @@ export const getAnalytics = async (query, user) => {
       { $sort: { count: -1 } },
     ]),
   ]);
+
   return { totalEvents: summary[0]?.total || 0, byEvent };
 };
+
 const assertAdminAnalytics = (u) => {
   if (!["admin", "super_admin", "seller"].includes(u?.role))
     throw err("Forbidden", 403);
+
   if (u.role === "admin" && !u.permissions?.includes("analytics.view"))
     throw err("Analytics permission required", 403);
 };
+
 export const getDashboardAnalytics = async (query, user) => {
   assertAdminAnalytics(user);
+
   const match = dateMatch(query);
+
   if (user.role === "seller") match.sellerId = String(user.id);
+
   const events = await AnalyticsEvent.aggregate([
     { $match: match },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
+
   const [users, shops, products, reviews] = await Promise.all([
     User.countDocuments(),
     Shop.countDocuments({ isDeleted: false }),
     Product.countDocuments({ isDeleted: false }),
     Review.countDocuments({ status: "published" }),
   ]);
+
   const [sellerProducts, nativeProducts, sellerShops, nativeShops] =
     await Promise.all([
       Product.countDocuments({ source: "seller", isDeleted: false }),
@@ -91,6 +119,7 @@ export const getDashboardAnalytics = async (query, user) => {
       Shop.countDocuments({ isDeleted: false }),
       Shop.countDocuments({ isDeleted: false, sellerId: null }),
     ]);
+
   return {
     totals: { users, shops, products, reviews },
     sourceComparison: {
@@ -102,31 +131,44 @@ export const getDashboardAnalytics = async (query, user) => {
     events,
   };
 };
+
 export const getProductAnalytics = async (id, q, user) => {
   assertAdminAnalytics(user);
+
   const p = await Product.findOne({ _id: id, isDeleted: false }).lean();
+
   if (!p) throw err("Product not found", 404);
+
   if (user.role === "seller" && String(p.sellerId) !== String(user.id))
     throw err("Forbidden", 403);
+
   const match = { ...dateMatch(q), productId: id };
+
   const rows = await aggregateAnalytics([
     { $match: match },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
+
   return { product: p, events: rows };
 };
+
 export const getShopAnalytics = async (id, q, user) => {
   assertAdminAnalytics(user);
+
   const s = await Shop.findOne({ _id: id, isDeleted: false }).lean();
+
   if (!s) throw err("Shop not found", 404);
+
   if (user.role === "seller" && String(s.sellerId) !== String(user.id))
     throw err("Forbidden", 403);
+
   const rows = await aggregateAnalytics([
     { $match: { ...dateMatch(q), shopId: id } },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
+
   return {
     shop: s,
     events: rows,
@@ -136,27 +178,36 @@ export const getShopAnalytics = async (id, q, user) => {
     }),
   };
 };
+
 export const getSellerAnalytics = async (query, user) => {
   const sellerId = user.role === "seller" ? String(user.id) : query.sellerId;
+
   if (!sellerId) throw err("sellerId is required", 400);
+
   if (
     user.role !== "seller" &&
     user.role !== "super_admin" &&
     user.role !== "admin"
   )
     throw err("Forbidden", 403);
+
   if (user.role === "admin" && !user.permissions?.includes("analytics.view"))
     throw err("Analytics permission required", 403);
+
   const rows = await aggregateAnalytics([
     { $match: { ...dateMatch(query), sellerId: String(sellerId) } },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
+
   return { sellerId: String(sellerId), events: rows };
 };
+
 export const getProductRankings = async (query, user) => {
   assertAdminAnalytics(user);
+
   const days = new Date(Date.now() - 30 * 86400000);
+
   const rows = await aggregateAnalytics([
     {
       $match: {
@@ -198,5 +249,122 @@ export const getProductRankings = async (query, user) => {
     { $sort: { views: -1, clicks: -1, carts: -1 } },
     { $limit: 20 },
   ]);
+
   return rows;
+};
+
+export const getSearchAnalytics = async (query, user) => {
+  assertAdminAnalytics(user);
+
+  if (user.role === "seller") throw err("Forbidden", 403);
+
+  const match = {
+    ...dateMatch(query),
+    eventType: "SEARCH",
+  };
+
+  const [summary, topKeywords, zeroResultKeywords, recentSearches] =
+    await Promise.all([
+      AnalyticsEvent.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            totalSearches: { $sum: 1 },
+            zeroResultSearches: {
+              $sum: {
+                $cond: [{ $eq: ["$resultCount", 0] }, 1, 0],
+              },
+            },
+            totalResultsReturned: {
+              $sum: { $ifNull: ["$resultCount", 0] },
+            },
+          },
+        },
+      ]),
+
+      AnalyticsEvent.aggregate([
+        {
+          $match: {
+            ...match,
+            searchKeyword: { $nin: [null, ""] },
+          },
+        },
+        {
+          $group: {
+            _id: { $toLower: "$searchKeyword" },
+            count: { $sum: 1 },
+            averageResults: {
+              $avg: { $ifNull: ["$resultCount", 0] },
+            },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 20 },
+      ]),
+
+      AnalyticsEvent.aggregate([
+        {
+          $match: {
+            ...match,
+            resultCount: 0,
+            searchKeyword: { $nin: [null, ""] },
+          },
+        },
+        {
+          $group: {
+            _id: { $toLower: "$searchKeyword" },
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 20 },
+      ]),
+
+      AnalyticsEvent.find(match)
+        .select("searchKeyword resultCount source page createdAt")
+        .sort({ createdAt: -1 })
+        .limit(25)
+        .lean(),
+    ]);
+
+  const totals = summary[0] || {
+    totalSearches: 0,
+    zeroResultSearches: 0,
+    totalResultsReturned: 0,
+  };
+
+  const averageResultsPerSearch =
+    totals.totalSearches > 0
+      ? Number(
+        (
+          totals.totalResultsReturned / totals.totalSearches
+        ).toFixed(2),
+      )
+      : 0;
+
+  return {
+    summary: {
+      totalSearches: totals.totalSearches || 0,
+      zeroResultSearches: totals.zeroResultSearches || 0,
+      averageResultsPerSearch,
+    },
+
+    topKeywords: topKeywords.map((row) => ({
+      keyword: row._id,
+      searches: row.count,
+      averageResults: Number((row.averageResults || 0).toFixed(2)),
+      lastSearchedAt: row.lastSearchedAt,
+    })),
+
+    zeroResultKeywords: zeroResultKeywords.map((row) => ({
+      keyword: row._id,
+      searches: row.count,
+      lastSearchedAt: row.lastSearchedAt,
+    })),
+
+    recentSearches,
+  };
 };

@@ -53,7 +53,7 @@ r.get("/suggestions", async (req, res, next) => {
         isDeleted: false,
         status: "active",
       })
-        .select("name _id")
+        .select("name _id images")
         .limit(5)
         .lean(),
       Shop.find({
@@ -68,12 +68,11 @@ r.get("/suggestions", async (req, res, next) => {
     res.json({
       success: true,
       data: [
-        ...products.map((x) => ({ type: "product", id: x._id, name: x.name })),
-        ...shops.map((x) => ({
-          type: "shop",
+        ...products.map((x) => ({
+          type: "product",
           id: x._id,
           name: x.name,
-          slug: x.slug,
+          image: x.images?.[0] || "",
         })),
       ],
     });
