@@ -140,9 +140,32 @@ export const listShopsService = async ({
     }
 
     if (search) {
-        query.$text = {
-            $search: search,
-        };
+        query.$or = [
+            {
+                name: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+            {
+                slug: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+            {
+                email: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+            {
+                phone: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+        ];
     }
 
     const sort = {
@@ -307,6 +330,8 @@ export const deleteShopService = async ({
 export const updateShopStatusService = async ({
     shopId,
     status,
+    reason = "",
+    actorId,
 }) => {
     const shop = await findShopDocumentById(shopId);
 
@@ -314,19 +339,53 @@ export const updateShopStatusService = async ({
         throw createServiceError("Shop not found", 404);
     }
 
-    const updated = await updateShopById(shopId, {
-        status,
-    });
+    const needsReason = [
+        "inactive",
+        "suspended",
+        "rejected",
+    ].includes(status);
+
+    if (
+        needsReason &&
+        !reason.trim()
+    ) {
+        throw createServiceError(
+            "A reason is required for this status.",
+            400,
+        );
+    }
+
+    const statusReason =
+        status === "active"
+            ? ""
+            : reason.trim();
+
+    const updated = await updateShopById(
+        shopId,
+        {
+            status,
+            statusReason,
+        },
+    );
 
     await safeAudit({
         actor: {
-            id: String(shop.sellerId),
+            id: String(actorId),
             role: "super_admin",
         },
         action: "SHOP_STATUS_CHANGED",
         resourceType: "Shop",
         resourceId: shopId,
-        newState: { status },
+        previousState: {
+            status: shop.status,
+            statusReason:
+                shop.statusReason || "",
+        },
+        newState: {
+            status,
+            statusReason,
+        },
+        reason: statusReason,
     });
 
     return updated;

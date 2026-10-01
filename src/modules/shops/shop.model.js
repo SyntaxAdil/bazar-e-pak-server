@@ -183,7 +183,12 @@ const shopSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
-
+    statusReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: "",
+    },
     rating: {
       type: Number,
       min: 0,

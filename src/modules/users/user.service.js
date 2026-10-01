@@ -64,8 +64,46 @@ export const getAllUsers = async (
         filter.role = role;
     }
 
-    if (status) {
-        filter.status = status;
+    if (status === "active") {
+        filter.$and = [
+            {
+                $or: [
+                    { status: "active" },
+                    { status: { $exists: false } },
+                    { status: null },
+                    { status: "" },
+                ],
+            },
+            {
+                isBlocked: { $ne: true },
+            },
+        ];
+    }
+
+    if (status === "suspended") {
+        filter.$and = [
+            {
+                $or: [
+                    { status: "suspended" },
+                    {
+                        $and: [
+                            {
+                                $or: [
+                                    { status: { $exists: false } },
+                                    { status: null },
+                                    { status: "" },
+                                ],
+                            },
+                            { isBlocked: true },
+                        ],
+                    },
+                ],
+            },
+        ];
+    }
+
+    if (status === "banned") {
+        filter.status = "banned";
     }
 
     if (isBlocked !== undefined) {
@@ -183,7 +221,7 @@ export const updateUserStatusService =
         }
 
         const updated = await updateUserStatus(userId, updateData);
-        await safeAudit({actor:requestingUser,action:"USER_STATUS_CHANGED",resourceType:"User",resourceId:userId,previousState:{status:targetUser.status,isBlocked:targetUser.isBlocked},newState:updateData});
+        await safeAudit({ actor: requestingUser, action: "USER_STATUS_CHANGED", resourceType: "User", resourceId: userId, previousState: { status: targetUser.status, isBlocked: targetUser.isBlocked }, newState: updateData });
         return updated;
     };
 
@@ -236,6 +274,6 @@ export const updateUserRoleService =
         }
 
         const updated = await updateUserRole(userId, role);
-        await safeAudit({actor:requestingUser,action:"USER_ROLE_CHANGED",resourceType:"User",resourceId:userId,previousState:{role:targetUser.role},newState:{role}});
+        await safeAudit({ actor: requestingUser, action: "USER_ROLE_CHANGED", resourceType: "User", resourceId: userId, previousState: { role: targetUser.role }, newState: { role } });
         return updated;
     };

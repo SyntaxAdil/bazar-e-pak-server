@@ -147,6 +147,8 @@ export const updateShopStatus = async (req, res) => {
     const shop = await updateShopStatusService({
         shopId,
         status: data.status,
+        reason: data.reason,
+        actorId: req.user.id,
     });
 
     return res.status(200).json({

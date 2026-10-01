@@ -7,22 +7,87 @@ const r = Router();
 const err = (m, c = 400) => Object.assign(new Error(m), { statusCode: c });
 r.get("/", async (req, res, next) => {
   try {
-    const page = Math.max(1, Number(req.query.page || 1)),
-      limit = Math.min(100, Number(req.query.limit || 20));
-    const f = { source: "pakbazaar", isDeleted: false };
-    if (req.query.search) f.$text = { $search: req.query.search };
-    const [data, total] = await Promise.all([
-      Shop.find(f)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      Shop.countDocuments(f),
-    ]);
+    const page = Math.max(
+      1,
+      Number(req.query.page || 1),
+    );
+
+    const limit = Math.min(
+      100,
+      Number(req.query.limit || 20),
+    );
+
+    const f = {
+      source: "pakbazaar",
+      isDeleted: false,
+    };
+
+    if (req.query.status) {
+      f.status = req.query.status;
+    }
+
+    if (req.query.search) {
+      const search = String(
+        req.query.search,
+      )
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      f.$or = [
+        {
+          name: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          slug: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          email: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          phone: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    const [data, total] =
+      await Promise.all([
+        Shop.find(f)
+          .sort({
+            createdAt: -1,
+          })
+          .skip(
+            (page - 1) * limit,
+          )
+          .limit(limit)
+          .lean(),
+
+        Shop.countDocuments(f),
+      ]);
+
     res.json({
       success: true,
       data,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages:
+          Math.ceil(
+            total / limit,
+          ),
+      },
     });
   } catch (e) {
     next(e);
