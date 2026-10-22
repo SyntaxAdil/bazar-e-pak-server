@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "author": {
-    "name": "Bazar-e-Pak Development Team"
+    "name": "Red Phoniex"
   },
   "license": "MIT",
   "keywords": [
@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "dev": "bun --watch src/server.js",
-    "start": "bun src/server.js",
+    "build": "bun build src/server.js --outdir dist --target bun",
+    "start": "bun run dist/server.js",
     "check": "bun --check src/server.js",
     "test": "bun test"
   },
