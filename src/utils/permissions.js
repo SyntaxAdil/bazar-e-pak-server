@@ -1,6 +1,8 @@
 export const ADMIN_PERMISSIONS = [
     "users.view", "shops.view", "products.view", "products.delete",
     "reviews.view", "reviews.moderate", "analytics.view",
+    // payments / finance (super_admin always has all of them)
+    "orders.view", "payments.view", "payments.refund", "payments.manage", "settlements.manage",
 ];
 
 export const hasPermission = (user, permission) =>

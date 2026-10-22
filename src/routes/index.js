@@ -21,6 +21,9 @@ import offerRoutes from "../modules/offers/offer.route.js";
 import settingsRoutes from "../modules/settings/settings.route.js";
 import searchRoutes from "../modules/search/search.route.js";
 import nativeShopRoutes from "../modules/shops/native-shop.route.js";
+import orderRoutes from "../modules/orders/order.route.js";
+import paymentRoutes from "../modules/orders/payment.route.js";
+import financeRoutes from "../modules/orders/finance.route.js";
 
 const router = express.Router();
 
@@ -61,5 +64,10 @@ router.use("/offers", offerRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/search", searchRoutes);
 router.use("/native-shops", nativeShopRoutes);
+
+// orders, payments (COD + PayFast), finance dashboards
+router.use("/orders", orderRoutes);
+router.use("/payments", paymentRoutes);
+router.use("/finance", financeRoutes);
 
 export default router;
