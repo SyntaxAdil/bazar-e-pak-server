@@ -11,6 +11,7 @@ import {
   getShopAnalytics,
   getSellerAnalytics,
   getProductRankings,
+  getShopRankings,
   getSearchAnalytics,
 } from "./analytics.service.js";
 
@@ -30,7 +31,10 @@ export const getAnalyticsController = async (req, res, next) => {
   try {
     res.json({
       success: true,
-      data: await getAnalytics(analyticsQuerySchema.parse(req.query), req.user),
+      data: await getAnalytics(
+        analyticsQuerySchema.parse(req.query),
+        req.user,
+      ),
     });
   } catch (e) {
     next(e);
@@ -86,6 +90,17 @@ export const productRankings = async (req, res, next) => {
     res.json({
       success: true,
       data: await getProductRankings(req.query, req.user),
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const shopRankings = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: await getShopRankings(req.query, req.user),
     });
   } catch (e) {
     next(e);
