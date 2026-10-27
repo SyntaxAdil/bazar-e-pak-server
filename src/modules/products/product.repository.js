@@ -9,11 +9,18 @@ export const findProductById = async (productId) => {
   return Product.findOne({
     _id: productId,
     isDeleted: false,
-  }).lean();
+  })
+    .populate("categoryId", "_id name slug")
+    .lean();
 };
 
 export const findProducts = async ({ filter, skip, limit, sort }) => {
-  return Product.find(filter).sort(sort).skip(skip).limit(limit).lean();
+  return Product.find(filter)
+    .populate("categoryId", "_id name slug")
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .lean();
 };
 
 export const countProducts = async (filter) => {

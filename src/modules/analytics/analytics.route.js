@@ -11,6 +11,7 @@ import {
   shopAnalytics,
   sellerAnalytics,
   productRankings,
+  shopRankings,
   searchAnalytics,
 } from "./analytics.controller.js";
 
@@ -65,6 +66,13 @@ r.get(
   authMiddleware,
   checkRoleMiddleware(["admin", "seller", "super_admin"]),
   productRankings,
+);
+
+r.get(
+  "/rankings/shops",
+  authMiddleware,
+  checkRoleMiddleware(["admin", "super_admin"]),
+  shopRankings,
 );
 
 export default r;

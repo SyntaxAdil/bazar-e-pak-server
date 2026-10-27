@@ -211,16 +211,30 @@ export const getProductRankings = async (query, user) => {
   const rows = await aggregateAnalytics([
     {
       $match: {
-        createdAt: { $gte: query.startDate ? new Date(query.startDate) : days },
-        ...(user.role === "seller" ? { sellerId: String(user.id) } : {}),
+        createdAt: {
+          $gte: query.startDate
+            ? new Date(query.startDate)
+            : days,
+        },
+        ...(user.role === "seller"
+          ? { sellerId: String(user.id) }
+          : {}),
       },
     },
     {
       $group: {
         _id: "$productId",
+
         views: {
-          $sum: { $cond: [{ $eq: ["$eventType", "PRODUCT_VIEW"] }, 1, 0] },
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "PRODUCT_VIEW"] },
+              1,
+              0,
+            ],
+          },
         },
+
         clicks: {
           $sum: {
             $cond: [
@@ -240,17 +254,145 @@ export const getProductRankings = async (query, user) => {
             ],
           },
         },
+
         carts: {
-          $sum: { $cond: [{ $eq: ["$eventType", "ADD_TO_CART"] }, 1, 0] },
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "ADD_TO_CART"] },
+              1,
+              0,
+            ],
+          },
         },
       },
     },
+
     { $match: { _id: { $ne: null } } },
     { $sort: { views: -1, clicks: -1, carts: -1 } },
     { $limit: 20 },
   ]);
 
-  return rows;
+  const productIds = rows.map((row) => row._id);
+
+  const products = await Product.find({
+    _id: { $in: productIds },
+    isDeleted: false,
+  })
+    .select("_id name")
+    .lean();
+
+  return rows.map((row) => {
+    const product = products.find(
+      (item) => String(item._id) === String(row._id),
+    );
+
+    return {
+      ...row,
+      name: product?.name || "Unknown Product",
+    };
+  });
+};
+
+
+export const getShopRankings = async (query, user) => {
+  assertAdminAnalytics(user);
+
+  if (user.role === "seller") {
+    throw err("Forbidden", 403);
+  }
+
+  const days = new Date(Date.now() - 30 * 86400000);
+
+  const rows = await aggregateAnalytics([
+    {
+      $match: {
+        createdAt: {
+          $gte: query.startDate
+            ? new Date(query.startDate)
+            : days,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$shopId",
+
+        views: {
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "SHOP_VIEW"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        clicks: {
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "SHOP_CLICK"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        whatsapp: {
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "WHATSAPP_CLICK"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        calls: {
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "CALL_CLICK"] },
+              1,
+              0,
+            ],
+          },
+        },
+
+        shares: {
+          $sum: {
+            $cond: [
+              { $eq: ["$eventType", "SHARE"] },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+    },
+
+    { $match: { _id: { $ne: null } } },
+    { $sort: { views: -1, clicks: -1 } },
+    { $limit: 20 },
+  ]);
+
+  const shopIds = rows.map((row) => row._id);
+
+  const shops = await Shop.find({
+    _id: { $in: shopIds },
+    isDeleted: false,
+  })
+    .select("_id name")
+    .lean();
+
+  return rows.map((row) => {
+    const shop = shops.find(
+      (item) => String(item._id) === String(row._id),
+    );
+
+    return {
+      ...row,
+      name: shop?.name || "Unknown Shop",
+    };
+  });
 };
 
 export const getSearchAnalytics = async (query, user) => {
